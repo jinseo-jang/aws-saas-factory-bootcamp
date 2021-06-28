@@ -376,6 +376,6 @@ AWS 콘솔에서 **DynamoDB** 서비스로 이동하고 페이지 왼쪽 상단�
 
 **Step 19** - **TenantBootcamp** 테이블을 살펴보면, 온보딩 한 테넌트의 item들이 표시 되어야 하며 **ProductBootcamp** 테이블의 **tenant_id** 필드에 자동으로 생성 된 GUID가 **tenant_id**로 들어가 있어야 합니다.
 
-**Recap** : 이제 Authorization HTTP 헤더에 전달 된 보안 토큰에서 사용자 지정 **"claim"** 을 추출하여 테넌트 컨텍스트를 획득하는 메커니즘을 만들었습니다. 또한 request를 가로 테넌트 컨텍스트를 획득하는 TokenManager helper 클래스를 만들어 복잡성을 줄였습니다.
+**Recap** : 이제 Authorization HTTP 헤더에 전달 된 보안 토큰에서 **"custom claim"** 을 추출하여 테넌트 컨텍스트를 획득하는 메커니즘을 만들었습니다. 또한 request를 가로 테넌트 컨텍스트를 획득하는 TokenManager helper 클래스를 만들어 복잡성을 줄였습니다.
 
 [Continue to Lab 3](Lab3.md)
