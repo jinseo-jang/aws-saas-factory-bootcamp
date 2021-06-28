@@ -105,33 +105,33 @@ app.get("/product/:id", function (req, res) {
 curl -w "\n" --header "Content-Type: application/json" INVOKE-URL/product/health
 ```
 
-**Be sure you've included the API stage name at the end of the URL _before_ /product/health**. You should get a JSON formatted success message from the **cURL** command indicating that the request was successfully processed and the service is ready to process requests.
+**URL 끝에 /product/health 그리고 앞에 API stage 이름을 포함했는지 확인합니다.** cURL \*\* 요청이 성공적으로 처리 되었으면 서비스가 요청을 처리 할 준비가되었음을 나타내는 JSON 형식의 성공 메시지를 받아야합니다.
 
-**Step 9** - Now that we know the service is up-and-running, we can add a new product to the catalog via the REST API. Submit the following REST command to create your first product. Copy and paste the following command (be sure to scroll to select the entire command), replacing **INVOKE-URL** with the URL and trailing stage name you captured from the API Gateway settings.
+**Step 9** - 이제 REST API를 통해 카탈로그에 새 제품을 추가 해보겠습니다. 다음 REST 호출을 통해 첫 ​​번째 제품을 생성합니다. 다음 명령을 복사하여 붙여 넣습니다.(스크롤하여 전체 명령을 선택해야 함). **INVOKE-URL**을 API Gateway 설정에서 캡처 한 URL로 바꿉니다.
 
 ```bash
 curl -w "\n" --header "Content-Type: application/json" --request POST --data '{"sku": "1234", "title": "My Product", "description": "A Great Product", "condition": "Brand New", "conditionDescription": "New", "numberInStock": "1"}' INVOKE-URL/product
 ```
 
-**Step 10** - Let's now go verify that the data we submitted landed successfully in the DynamoDB table we created. Navigate to the DynamoDB service in the AWS console and select **Tables** from the list of options at the upper left-hand side of the page. The center of the page should now display a list of tables. Find your **ProductBootcamp** table and select the link with the table name. This will display basic information about the table. Select the **Items** tab from the top of the screen, you'll see the list of items in your product table, which should include the item you just added.
+**Step 10** - 이제 데이터가 DynamoDB 테이블에 성공적으로 생성 되었는지 확인하겠습니다. AWS 콘솔에서 DynamoDB 서비스로 이동하고 페이지 왼쪽 상단에있는 옵션 목록에서 **Tables**을 선택합니다. 이제 페이지 중앙에 테이블 목록이 표시됩니다. **ProductBootcamp** 테이블을 찾아 테이블 이름에 있는 링크를 선택합니다. 테이블에 대한 기본 정보가 표시됩니다. 화면 상단에서 **Items** 탭을 선택하면 방금 추가 한 데이터가 포함 된 제품 테이블의 item 목록이 표시됩니다.
 
 <p align="center"><img src="./images/lab2/part1/dynamo_table_items.png" alt="Lab 2 Part 1 Step 10 DynamoDB Table Items"/></p>
 
-**Recap**: This initial exercise illustrates a single-tenant version of the product manager service. It does not have identity or tenant context built into the service. In many respects, this represents the flavor of service you'd see in many non-SaaS environments. It gives us a good base for thinking about how we can now evolve the service to incorporate multi-tenant concepts.
+**Recap**: 이번 실습에서는 싱글 테넌트 용 product manager 서비스를 만들었습니다. 아직은 서비스에 내장 된 Identity 또는 테넌트 컨텍스트가 반영되지 않았습니다. 이제 이걸 바탕으로 멀티 테넌트 개념을 반영하여 서비스를 진화해 나가보겠습니다.
 
 ## Part 2 - Adding Multi-Tenant Data Partitioning
 
-The first step in making our service multi-tenant aware is to implement a partitioning model where we can persist data from multiple tenants in our single DynamoDB database. We'll also need to inject tenant context into our REST requests and leverage this context for each of our CRUD operations.
+우리 서비스를 멀티 테넌트를 인식하도록 만드는 첫 번째 단계는 단일 DynamoDB 데이터베이스에서 여러 테넌트의 데이터를 유지할 수있도록 파티셔닝 모델을 구현하는 것입니다. 또한 REST 요청에 테넌트 컨텍스트를 주입하고 각 CRUD 작업에 이 테넌트 컨텍스트를 활용해야합니다.
 
-To make this work, will need a different configuration for our DynamoDB database, introducing a tenant identifier as the partition key. We'll also need a new version of our service that accepts a tenant identifier in each of the REST methods and applies it as it accesses DynamoDB tables.
+이를 위해서 DynamoDB 데이터베이스의 파티션 키로 테넌트 식별자를 도입하는 설정이 필요합니다. 또한 각 REST 메서드에서 테넌트 식별자를 받아, DynamoDB 테이블에 액세스 할 때 이를 사용 하는 새로운 버전의 서비스가 필요합니다.
 
-The steps that follow will take you through the process of adding these capabilities to the product manager service:
+이어지는 단계들에서 product manager 서비스에 이러한 기능을 추가하겠습니다.
 
-**Step 1** - For this iteration, we'll need a new version of our service. While we won't modify the code directly, we'll take a quick look at how the code changes to support data partitioning. Open our product manager server.js file in our Cloud9 IDE. In Cloud9, navigate to `Lab2/Part2/product-manager/`, right-click `server.js` and click **Open**.
+**Step 1** - 먼저 새로운 버전의 서비스가 배포가 필요합니다. 여기서 코드를 직접 수정하지는 않겠지만, 데이터 파티셔닝을 지원하기 위해 코드가 어떻게 변경되는지 간단히 살펴 보겠습니다. Cloud9 IDE에서 product manager server.js 파일을 엽니다. Cloud9에서`Lab2/Part2/product-manager/`로 이동하고`server.js`를 마우스 오른쪽 버튼으로 클릭 한 다음 **Open**를 클릭합니다.
 
 <p align="center"><img src="./images/lab2/part2/cloud9_open_script.png" alt="Lab 2 Part 2 Step 1 Cloud9 Open Script"/></p>
 
-This file doesn't look all that different than our prior version. In fact, the only change here is that we've added a tenant identifier to the parameters that we supply to the DynamoDBHelper. Below is a snippet of the code from our file.
+이 파일은 이전 버전과 크게 다르지 않습니다. 실제로 여기서 유일한 변경 사항은 DynamoDBHelper에 제공하는 파라미터에 테넌트 식별자를 추가했다는 것입니다. 다음은 그 코드의 일부 입니다.
 
 ```javascript
 app.post("/product", function (req, res) {
@@ -160,9 +160,9 @@ app.post("/product", function (req, res) {
 });
 ```
 
-The line `product.tenant_id = req.body.tenant_id;` represents the only change you'll see between this version and the original. It extracts the tenant identifier from the incoming request and adds it to our product object. This, of course, means that REST calls to this method must supply a tenant identifier with each invocation of this method.
+`product.tenant_id = req.body.tenant_id;`줄은 새로운 버전의 유일한 변경 사항 입니다. 들어오는 요청에서 테넌트 식별자를 추출하여 제품 객체에 추가합니다. 이것은 물론, 이 메서드에 대한 REST 호출 할 때마다 테넌트 식별자를 제공해야 함을 의미합니다.
 
-**Step 2** - Up to this point, we haven't really looked at the **DynamoDBHelper** to see how it accommodates our ability to get items from the DynamoDB table. This module is a wrapper of the AWS-provided DynamoDB client with some added elements to support isolation. In fact, even as we're introducing this tenant identifier model, it does not change how DynamoDBHelper processes this request. Below is a snipped of code from the DynamoDBHelper for the `getItem()` method:
+**Step 2** - 지금까지는 **DynamoDBHelper**가 DynamoDB 테이블에서 item을 어떻게 가져 오는지 살펴보지 않았습니다. 이 모듈은 AWS 제공 DynamoDB 클라이언트의 래퍼에 isolation을 지원 하기 위한 몇 가지 요소가 추가된 형태 입니다. 사실 이 테넌트 식별자 모델을 도입더라도 DynamoDBHelper가이 요청을 처리하는 방식은 변경되지 않습니다. 다음은`getItem ()`메서드에 대한 DynamoDBHelper의 코드입니다.
 
 ```javascript
 DynamoDBHelper.prototype.getItem = function (keyParams, credentials, callback) {
@@ -186,67 +186,65 @@ DynamoDBHelper.prototype.getItem = function (keyParams, credentials, callback) {
 };
 ```
 
-You'll notice that we're passing through all the parameters that we constructed in our product manager service as the `keyParams` value in the `fetchParams` structure. The client will simply use the parameters to match the partition key for the table. The takeaway here is that nothing unique is done in the code to support the partitioning by a tenant identifier. It's simply just another key in our DynamoDB table.
+제품 관리자 서비스에서 모든 매개 변수를`fetchParams` 구조의`keyParams` 값으로 전달하고 있음을 알 수 있습니다. 클라이언트는 단순히 이 매개 변수를 사용하여 테이블의 파티션 키를 일치시킵니다. **여기서 요점은 테넌트 식별자에 의한 분할을 지원하기 위해 코드에서 고유 한 작업이 수행되지 않는다는 것입니다. DynamoDB 테이블의 또 다른 키일뿐입니다.**
 
-**Step 3** - Now that you have a better sense of how this service changes to accommodate data partitioning, let's go ahead and deploy version 2 of the product manager, within our Cloud9 IDE. Navigate to `Lab2/Part2/product-manager` directory, right-click `deploy.sh`, and click **Run** to execute the shell script.
+**Step 3** - 이제 데이터 파티셔닝을 구현하기 위해 이 서비스가 어떻게 변경되는지 이해 했으므로 Cloud9 IDE 내에서 product manager 버전 2를 배포 해 보겠습니다. `Lab2/Part2/product-manager` 디렉토리로 이동하여`deploy.sh`를 마우스 오른쪽 버튼으로 클릭 한 다음 **Run**을 클릭하여 셸 스크립트를 실행합니다.
 
 <p align="center"><img src="./images/lab2/part2/cloud9_run_script.png" alt="Lab 2 Part 2 Step 3 Cloud9 Run Script"/></p>
 
-**Step 4** - Wait for the `deploy.sh` shell script to execute successfully.
+**Step 4** - `deploy.sh`이 성공적으로 완료 될때 까지 기다립니다.
 
 <p align="center"><img src="./images/lab2/part2/cloud9_run_script_complete.png" alt="Lab 2 Part 2 Step 4 Cloud9 Script Finished"/></p>
 
-**Step 5** - With this new partitioning scheme, we must also change the configuration of our DynamoDB table. If you recall, the current table used **product_id** as the partition key. We now need to have **tenant_id** be our partition key and have the **product_id** serve as a secondary index (since we may still want to sort on that value). The easiest way to introduce this change is to simply **_delete_** the existing **ProductBootcamp** table and create a new one with the correct configuration.
+**Step 5** - 이 새로운 파티션 체계를 사용하여 DynamoDB 테이블의 구성도 변경 해야합니다. 기억 하겠지만, 이 테이블은 **product_id**를 파티션 키로 사용했습니다. 이제 **tenant_id**를 파티션 키로 지정하고 **product_id**를 보조 인덱스로 사용해야합니다(여전히 해당 값을 기준으로 정렬 할 수 있으므로). 이 변경 사항을 적용하는 가장 쉬운 방법은 기존 **ProductBootcamp** 테이블을 **_delete_**하고 올바른 구성으로 새 테이블을 만드는 것입니다.
 
-Navigate to the DynamoDB service in the AWS console and select the **Tables** option from the menu at the top left of the page. Select the radio button for the **ProductBootcamp** table. After selecting the product table, select the **Delete table** button. You will be prompted to confirm removal of CloudWatch alarms to complete the process.
+AWS 콘솔에서 DynamoDB 서비스로 이동하고 페이지 왼쪽 상단에있는 메뉴에서 **Tables** 옵션을 선택합니다. **ProductBootcamp** 테이블의 라디오 버튼을 선택합니다. 제품 표를 선택한 후 **Delete table** 버튼을 선택합니다. 프로세스를 완료하려면 CloudWatch 경보 제거를 확인하라는 메시지가 표시됩니다.
 
 <p align="center"><img src="./images/lab2/part2/dynamo_delete_table.png" alt="Lab 2 Part 2 Step 5 DynamoDB Delete Table"/></p>
 
-**Step 6** - Now we can start the table creation process from scratch. Select the **Create table** button from the top of the page. As before, enter **ProductBootcamp** for the table name, but this time enter **tenant_id** for the partition key. Now click on the **Add sort key** checkbox and we'll enter **product_id** as the sort key. Click the **Create** button to finalize the table.
+**Step 6** - 이제 다시 새로운 테이블을 만듭니다. 페이지 상단에서 **Create table** 버튼을 선택합니다. 이전과 마찬가지로 테이블 이름으로 **ProductBootcamp**를 입력 하지만 이번에는 파티션 키로 **tenant_id**를 입력합니다. 이제 **Add sort key** 확인란을 클릭하고 정렬 키로 **product_id**를 입력합니다. **Create** 버튼을 클릭합니다.
 
 <p align="center"><img src="./images/lab2/part2/dynamo_create_table.png" alt="Lab 2 Part 2 Step 6 DynamoDB Create Table"/></p>
 
-**Step 7** - The service has now been modified to support the introduction of a tenant identifier and we've modified DynamoDB to partition the data with this tenant identifier. It's time now to validate that the new version of the service is up-and-running. Issue the following cURL command to invoke the health check on the service. Refer to Part 1 if you need to find your API Gateway URL. Copy and paste the following command, replacing **INVOKE-URL** with the URL and trailing stage name you captured from the API Gateway settings.
+**Step 7** - 앞에 까지, 서비스가 테넌트 식별자를 반영할 수 있도록 수정 했고, 이 테넌트 식별자로 데이터를 파티셔닝 하도록 DynamoDB 테이블도 수정했습니다. 이제 새 버전의 서비스가 실행 중인지 확인할 때입니다. 다음 cURL 명령을 실행하여 서비스 health 체크를 호출하십시오. API Gateway URL을 찾아야하는 경우 Part 1를 다시 참조하십시오. 다음 명령을 복사하여 붙여넣고 **INVOKE-URL**을 API Gateway 설정에서 캡처 한 URL로 바꿉니다.
 
 ```bash
 curl -w "\n" --header "Content-Type: application/json" INVOKE-URL/product/health
 ```
 
-**Be sure you've included the API stage name at the end of the URL before /product/health.** You should get a JSON formatted success message from the **cURL** command indicating that the request was successfully processed and the service is ready to process requests.
-
-**Step 8** - Now that we know the service is up-and-running, we can add a new product to the catalog via the REST API. Unlike our prior REST call, this one must provide the tenant identifier as part of the request. Submit the following REST command to create a product for tenant "**123**". Copy and paste the following command (be sure to scroll to select the entire command), replacing **INVOKE-URL** with the URL and trailing stage name you captured from the API Gateway settings.
+**Step 8** - 이제 서비스가 실행 중임을 확인 했으면, REST API를 통해 카탈로그에 새 제품을 추가 할 수 있습니다. 이전 REST 호출과 달리 이 호출은 요청의 일부로 테넌트 식별자를 제공해야합니다. 다음 REST 명령을 제출하여 "**123**"테넌트에 대한 제품을 생성 합니다. 아래 명령을 복사하여 붙여 넣습니다(스크롤하여 전체 명령을 선택해야 함). **INVOKE-URL**을 API Gateway 설정에서 캡처 한 URL로 바꿉니다.
 
 ```bash
 curl -w "\n" --header "Content-Type: application/json" --request POST --data '{"tenant_id": "123", "sku": "1234", "title": "My Product", "description": "A Great Product", "condition": "Brand New", "conditionDescription": "New", "numberInStock": "1"}' INVOKE-URL/product
 ```
 
-This looks much like the prior example. However, notice that we pass a parameter of `tenant_id` ("123") in the body.
+앞선 제품 생성 테스트와 유사해 보이지만 전달하는 body에 `tenant_id` ("123") 이 포함되어 있습니다.
 
-**Step 9** - Before we verify that this data was successfully written, let's introduce another product for a different tenant. This will highlight the fact that our partitioning scheme can store data separately for each tenant. To add another product for a different tenant, we just issue another POST command for a different tenant. Submit the following POST for tenant "**456**". Copy and paste the following command (be sure to scroll to select the entire command), replacing **INVOKE-URL** with the URL and trailing stage name you captured from the API Gateway settings.
+**Step 9** - 이 데이터가 성공적으로 생성 되었는지 확인하기 전에 다른 테넌트의 제품도 생성하겠습니다. 이것은 저희가 만든 파티션 체계가 각 테넌트 별로 데이터를 저장할 수 있는지 확인하기 위해서 입니다. 다른 테넌트에 해당 하는 제품을 추가하려면 다른 테넌트에 대해 다른 POST 명령을 실행하기 만하면됩니다. 테넌트 "**456**"에 대해 다음 POST를 제출합니다. 다음 명령을 복사하여 붙여 넣습니다 (스크롤하여 전체 명령을 선택해야 함). **INVOKE-URL**을 API Gateway 설정에서 캡처 한 URL로 바꿉니다.
 
 ```bash
 curl -w "\n" --header "Content-Type: application/json" --request POST --data '{"tenant_id": "456", "sku": "1234", "title": "My Product", "description": "A Great Product", "condition": "Brand New", "conditionDescription": "New", "numberInStock": "1"}' INVOKE-URL/product
 ```
 
-**Step 10** - Let's go verify that the data we submitted landed successfully in the DynamoDB table we created. Navigate to the DynamoDB service in the AWS console and select **Tables** from the list of options at the upper left-hand side of the page. The center of the page should now display a list of tables. Find your **ProductBootcamp** table and select the link with the table name. This will display basic information about the table. Now select the **Items** tab from the top of the screen and you'll see the list of items in your table which should include the two items you just added. Verify that these two items exist and are partitioned based on the two tenant identifiers that you suppled ("123" and "456").
+**Step 19** - 제출 한 데이터가 생성 한 DynamoDB 테이블에 성공적으로 생성되었는지 확인 하겠습니다. AWS 콘솔에서 DynamoDB 서비스로 이동하고 페이지 왼쪽 상단에있는 옵션 목록에서 **Tables**을 선택합니다. 이제 페이지 중앙에 테이블 목록이 표시됩니다. **ProductBootcamp** 테이블을 찾아 테이블 이름이있는 링크를 선택합니다. 테이블에 대한 기본 정보가 표시됩니다. 이제 화면 상단에서 **Items** 탭을 선택하면 방금 추가 한 두 데이터를 포함하는 item 목록이 표에 표시됩니다. 이 두 item이 존재하고 사용자가 제공 한 두 개의 테넌트 식별자 ( "123"및 "456")를 기반으로 정상적으로 파티셔닝 되어 저장 되었는지 확인합니다.
 
 <p align="center"><img src="./images/lab2/part2/dynamo_scan_table.png" alt="Lab 2 Part 2 Step 10 DynamoDB Scan Table"/></p>
 
-**Recap**: You've now successfully introduced data partitioning into your service. The microservice achieved this by adding a tenant identifier parameter to the product manager service and changing the product table to use **tenant_id** as the partition key. Now, all of your CRUD operations are multi-tenant aware.
+**Recap** : 이제 서비스에 데이터 파티셔닝을 성공적으로 도입했습니다. product manager 서비스에 테넌트 식별자 매개 변수를 추가하고 제품 테이블에 **tenant_id**를 파티션 키로 추가 했습니다. 이제 모든 CRUD 작업이 멀티 테넌트 개념을 인식 할겁니다.
 
 ## Part 3 - Applying Tenant Context
 
-At this stage we have data partitioning, but our way of introducing the tenant context was somewhat crude. It's simply not practical or secure to expect that tenant identifiers are to be passed as a parameter to every call to the product management service. Instead, this tenant context should come from the tokens that are part of the authentication process that we setup in the prior lab.
+테넌트 식별자가 product manager 서비스에 대한 모든 호출에 매개 변수로 잘 전달 될 것이라고 기대하는 것은 실용적이거나 안전하지 않습니다. 이 대신에, 테넌트 컨텍스트는 이전 랩에서 설정 한 인증 프로세스의 일부인 토큰에서 가져오도록 하는게 효과적입니다.
 
-So, our next step is to enable our service to be aware of these security tokens and extract our tenant context from these tokens. Then, our partitioning that we just setup can rely on a tenant identifier that was provisioned during onboarding and simply flowed through to your product manager service in the header of each HTTP request.
+**따라서 다음 단계는 서비스가 이러한 보안 토큰을 인식하고 이러한 토큰에서 테넌트 컨텍스트를 추출 할 수 있도록 만드는 것입니다. 그런 다음 방금 설정 한 파티셔닝은, 온보딩 과정에서 생성되어 각 HTTP request header로 제품 관리자 서비스로 전달 된 테넌트 식별자를 통해 달성할 수 있습니다.**
 
-For this section, we'll see how our product manager service gets retrofitted with new code to extract these tokens from the HTTP request and applies them to our security and data partitioning model.
+이 섹션에서는 HTTP 요청에서 이러한 토큰을 추출하여 보안 및 데이터 파티셔닝 모델에 적용하기 위해 product manager 서비스가 새 코드로 어떻게 개조 되는지 살펴 보겠습니다.
 
-**Step 1** - For this iteration, we'll need a new version of our service. While we won't modify the code directly, we'll take a quick look at how the code changes to support acquiring tenant context from identity tokens. View the new version of our Product Manager service in Cloud9 by opening `Lab2/Part3/product-manager/server.js`.
+**Step 1** - 진행을 위해 새로운 버전의 서비스가 필요합니다. 코드를 직접 수정하지는 않겠지 만, Identity 토큰에서 테넌트 컨텍스트 획득을 지원하기 위해 코드가 어떻게 변경되는지 간단히 살펴 보겠습니다. `Lab2/Part3/product-manager/server.js`를 열어 Cloud9에서 새로윤 버전의 Product Manager 서비스를 확인합니다.
 
 <p align="center"><img src="./images/lab2/part3/cloud9_open_script.png" alt="Lab 2 Part 3 Step 1 Cloud9 Open Script"/></p>
 
-Version 3 of our product manager service introduces a new **TokenManager** helper object that abstracts away many aspects of the token processing. Let's take a look at a snippet of this updated version to see how tenant context is acquired from the user's identity:
+Product manager 서비스의 버전 3에는 토큰 처리 작업을 추상화하는 새로운 **TokenManager** helper 개체가 추가되었습니다. 잠깐 이 업데이트 된 버전의 코드를 살펴보고 사용자의 Identity에서 테넌트 컨텍스트를 얻는 방법을 살펴 보겠습니다:
 
 ```javascript
 app.use(function (req, res, next) {
@@ -267,11 +265,11 @@ app.use(function (req, res, next) {
 });
 ```
 
-The TokenManager's `getTenantId` function shown here, which appears in most of the services of our application, provides the mechanism for acquiring the tenant identifier from the **HTTP headers** for each REST request. It achieves this by using the middleware construct of the Express framework. This middleware allows you to introduce a function that intercepts and pre-processes each HTTP request before it is processed by the functions for each REST method.
+여기에 표시된 TokenManager의 `getTenantId`함수는 저희 애플리케이션 대부분의 서비스에 나타나면서 각 REST 요청에 대해 **HTTP headers**에서 테넌트 식별자를 획득하는 메커니즘을 제공합니다. 저희가 사용하는 샘플 애플리케이션은 Express 프레임 워크의 미들웨어 구성을 사용하여 이를 구현 했습니다. 이 미들웨어를 사용하면 각 REST 메서드에 대한 함수가 처리하기 전에 각 HTTP 요청을 가로 채서 사전 처리하는 함수를 도입 할 수 있습니다.
 
-You'll see after the response headers are set, the bearer token is extracted from the **HTTP Authorization** header. This token holds the data we want to use to acquire our tenant context. We then use the **TokenManager** helper to get the tenant identifier out of the request. The call to this function returns the tenant identifier and assigns it to the `tenantId` variable. This variable is then referenced throughout the service to acquire tenant context.
+응답 헤더가 설정된 후 **HTTP Authorization** 헤더에서 **bearer token** 이 추출되는 것을 볼 수 있습니다. 이 토큰은 테넌트 컨텍스트를 획득 하기 위한 데이터를 보유 하고 있습니다. 그런 다음 **TokenManager** helper를 사용하여 request에서 테넌트 식별자를 가져옵니다. 그러면 이어서 이 함수에 대한 호출은 테넌트 식별자를 반환하고 이를`tenantId` 변수에 할당합니다. 이 변수는 테넌트 컨텍스트를 획득하기 위해 서비스 전체에서 참조됩니다.
 
-**Step 2** - Now that you have the tenant identifier, the application of this is relatively straightforward. You can see that we've changed the way we're acquiring the tenant identifier, referencing the **tenantId** that we extracted from the bearer token in the middleware in Step 1 (instead of pulling this from the incoming requests).
+**Step 2** - 이제 테넌트 식별자를 얻었으므로 이를 적용하는 것은 비교적 간단합니다. 아래 코드 일부를 보듯이, 1 단계에서 미들웨어의 bearer token 에서 추출한 **tenantId**를 참조하여 테넌트 식별자를 획득하는 방식을 적용한걸 알수 있습니다. (수신 요청에서 가져 오는 대신).
 
 ```javascript
 app.get("/product/:id", function (req, res) {
@@ -301,9 +299,9 @@ app.get("/product/:id", function (req, res) {
 });
 ```
 
-**Step 3** - As you can imagine, most of the token processing work here is intentionally embedded in the helper class. Let's take a quick look at what is in that class to see how it's extracting this context from the tokens.
+**Step 3** - 여기에서 대부분의 토큰 처리 작업은 의도적으로 helper class에 포함되어 있습니다. 토큰에서 이 컨텍스트를 추출하는 방법을 알아보기 위해 해당 클래스의 내용을 간략히 살펴 보겠습니다.
 
-Below is a snippet of the code from the TokenManager that is invoked to extract the token. This function extracts the security token from the Authorization header of the HTTP request, decodes it, then acquires the tenantId from the decoded token. _In a production environment, this unpacking would use a signed certificate as a security measure to ensure the token contents were not modified during transmission_.
+다음은 토큰을 추출하기 위해 호출되는 TokenManager의 코드 일부 입니다. 이 함수는 HTTP 요청의 Authorization 헤더에서 보안 토큰을 추출하여 디코딩 한 다음 디코딩 된 토큰에서 tenantId를 획득합니다. _프로덕션 환경에서 이 언패킹은 보안을 위해 서명 된 인증서를 사용하여 토큰 내용이 전송 중에 수정되지 않았음을 컨펌 합니다_.
 
 ```javascript
 module.exports.getTenantId = function (req) {
@@ -320,64 +318,64 @@ module.exports.getTenantId = function (req) {
 };
 ```
 
-**Step 4** - Now that you have a better sense of how we've introduced tenant context through HTTP headers, let's go ahead and deploy version 3 of the product manager, within our Cloud9 IDE. Navigate to `Lab2/Part3/product-manager/` directory, right-click `deploy.sh`, and click **Run** to execute the shell script.
+**Step 4** - 이제 HTTP 헤더를 통해 테넌트 컨텍스트를 도입 하는 방법을 이해 했으므로 Cloud9 IDE 내에서 product manager 버전 3을 배포 합니다. `Lab2/Part3/product-manager/`디렉토리로 이동하여`deploy.sh`를 마우스 오른쪽 버튼으로 클릭 한 다음 **Run**을 클릭하여 셸 스크립트를 실행합니다.
 
 <p align="center"><img src="./images/lab2/part3/cloud9_run_script.png" alt="Lab 2 Part 3 Step 4 Cloud9 Run Script"/></p>
 
-**Step 5** - Wait for the `deploy.sh` shell script to execute successfully.
+**Step 5** - `deploy.sh` 이 성공적으로 완료될때 까지 기다립니다.
 
 <p align="center"><img src="./images/lab2/part3/cloud9_run_script_complete.png" alt="Lab 2 Part 3 Step 5 Cloud9 Script Finished"/></p>
 
-**Step 6** - Now that the application is deployed, it's time to see how this new tenant and security context gets processed. We'll need to have a valid token for our service to be able to succeed. That means returning our attention to the web application, which already has the ability to authenticate a user and acquire a valid token from our identity provider, Cognito. First, we'll need to make sure we have at least two tenants registered.
+**Step 6** - 이제 애플리케이션이 배포 되었으므로 이 새로운 테넌트 및 보안 컨텍스트가 처리되는 모습을 확인하겠습니다. 이를 위해 최소 두 명의 tenant가 등록 되어 있는지 확인해야합니다.
 
-You already registered a tenant in Lab 1. Let's add a second tenant following the same steps as in Lab 1. Enter the URL to your application (created in Lab 1) and select the **Register** button when the login screen appears. Refer to Lab 1 if you need to capture the URL for your application from the **CloudFront** service.
+이미 Lab 1에서 테넌트를 하나 등록 했습니다. Lab 1과 동일한 단계에 따라 두 번째 테넌트를 추가하겠습니다. 애플리케이션의 URL(Lab 1에서 생성됨)을 입력하고 로그인 화면이 나타나면 **Register** 버튼을 선택합니다. **CloudFront** 서비스에서 애플리케이션의 URL을 캡처 해야하는 경우 Lab 1을 참조하십시오.
 
-**Step 7** - Fill in the form with data about your new tenant. Since we're creating two tenants as part of this flow, you'll need **two separate** email addresses. If you don't have two, you can use the same trick with the plus (**+**) symbol in the username before the at (**@**) symbol as described in Lab 1. After you've filled in the form, select the **Register** button.
+**Step 7** - 새 테넌트에 대한 데이터로 가입을 완료 합니다. 두 개의 테넌트를 생성하므로 **두 개의 별도** 이메일 주소가 필요합니다. 두 개가 없는 경우 lab 1에 설명 된대로 **@** 기호 앞의 사용자 이름에 더하기 (**+**) 기호를 사용하는 트릭을 사용할 수 있습니다. 양식에서 **Register** 버튼을 선택합니다.
 
-**Step 8** - Just like in Lab 1, you'll now check your email for the validation message that was sent by Cognito. You should find a message in your inbox that includes your username (your email address) along with a temporary password (generated by Cognito). The message will be similar to the following:
+**Step 8** - lab 1과 마찬가지로 이제 이메일에서 Cognito에서 보낸 등록 확인 메시지를 확인합니다. 받은 편지함에서 임시 암호 (Cognito에서 생성)와 함께 사용자 이름 (이메일 주소)이 포함 된 메시지를 찾아야합니다. 메시지는 다음과 유사합니다.
 
 <p align="center"><img src="./images/lab2/part3/cognito_email.png" alt="Lab 2 Part 3 Step 8 Cognito Validation Email"/></p>
 
-**Step 9** - We can now login to the application using these credentials. Return to the application using the public URL (created in Lab 1). Enter the temporary credentials that were provided in your email and select the **Login** button.
+**Step 9** - 이제 애플리케이션에 로그인 할 수 있습니다. 공개 URL을 사용하여 애플리케이션으로 돌아갑니다 (실습 1에서 생성됨). 이메일에 제공된 임시 자격 증명을 입력하고 **Login** 버튼을 선택합니다.
 
 <p align="center"><img src="./images/lab2/part3/login.png" alt="Lab 2 Part 3 Step 9 Login"/></p>
 
-**Step 10** - The system will detect that this is a temporary password and indicate that you need to setup a new password for your account. To do this, application redirects you to a new form where you'll setup your new password (as shown below). Create your new password and select the **Confirm** button.
+**Step 10** - 새 비밀번호를 만들고 **Confirm** 버튼을 선택합니다.
 
 <p align="center"><img src="./images/lab2/part3/change_password.png" alt="Lab 2 Part 3 Step 10 Reset Password"/></p>
 
-After you've successfully changed your password, you'll be logged into the application and landed at the home page. We won't get into the specifics of the application yet.
+암호를 성공적으로 변경하면 애플리케이션에 로그인되고 홈 화면으로 이동될 겁니다.
 
-**Step 11** - You must have two tenants to finish the lab exercises. If you only have one tenant registered, create another by repeating steps 6-10 again, supplying a different email address for your tenant.
+**Step 11** - 실습을 완료 하려면 두 명의 테넌트가 있어야합니다. 테넌트가 하나만 등록 된 경우 6-10 단계를 다시 반복하여 테넌트에 대해 다른 이메일 주소를 제공하여 다른 테넌트를 만듭니다.
 
-**Step 12** - Now that our tenants have been created through the onboarding flow let's actually create some products via the application. Log into the application as your first tenant and navigate to the **Catalog** menu item at the top of the page.
+**Step 12** - 이제 온보딩을 통해 새로운 테넌트들이 생성되었으므로 실제로 애플리케이션을 통해 일부 제품을 생성 해 보겠습니다. 첫 번째 테넌트로 애플리케이션에 로그인하고 페이지 상단의 **Catalog** 메뉴 항목으로 이동합니다.
 
 <p align="center"><img src="./images/lab2/part3/catalog.png" alt="Lab 2 Part 3 Step 12 Catalog Page"/></p>
 
-**Step 13** - With the **Catalog** page open, select the **Add Product** button from the top right of the page. Fill in the details with the product data of your choice. However, for the **SKU**, precede all of your SKU's with **TENANTONE**. So, SKU one might be "**TENANTONE-ABC**". The key here is that we want to have _specific_ values that are prepended to your SKU that clearly identify the products as belonging to this specific tenant.
+**Step 13** - **Catalog** 페이지가 열린 상태에서 페이지 오른쪽 상단의 **Add Product** 버튼을 선택합니다. 그리고 세부 정보를 입력하십시오. 그러나 **SKU**의 경우 테넌트 별로 구분을 위해서 "**TENANTONE-ABC**"와 같이 **TENANTONE**을 앞에 추가합니다.
 
 <p align="center"><img src="./images/lab3/part1/add_product1.png" alt="Lab 3 Part 1 Step 7 Add Product"/></p>
 
-**Step 14** - Once you've added a couple of products for one of your tenants, select the dropdown menu with your tenant name at the top right of the screen and select **Logout**. This will return you to the login page.
+**Step 14** - 테넌트 중 하나에 대해 두 가지 제품을 추가 했으면 화면 오른쪽 상단에서 테넌트 이름이있는 드롭 다운 메뉴를 선택하고 **Logout**을 선택합니다. 로그인 페이지로 돌아갑니다.
 
 <p align="center"><img src="./images/lab2/part3/logout.png" alt="Lab 2 Part 3 Step 14 Logout"/></p>
 
-**Step 15** - Enter the credentials of the other tenant that you created and select the **Login** button. You're now logged in as a different tenant and you should see a different name in the profile menu selection in the upper right of the screen.
+**Step 15** - 생성 한 다른 테넌트의 자격 증명을 입력하고 **Login** 버튼을 선택합니다. 이제 다른 테넌트로 로그인 했으며 화면 오른쪽 상단의 프로필 메뉴 선택에 다른 이름이 표시되어야 합니다.
 
-**Step 16** - Now navigate to the **Catalog** view again. You should note that the list of products is empty at this point. The products that you previously created were associated with another tenant so they are intentionally not show here. **The illustrates that our partitioning is working**.
+**Step 16** - 이제 **Catalog** 보기로 다시 이동합니다. 제품 목록이 비어 있습니다. 이전에 생성 한 제품은 다른 테넌트와 연결 되었으므로 여기에 표시되지 않습니다. **이는 파티셔닝이 작동하고 있음을 보여줍니다**.
 
-**Step 17** - As before, click the **Add Product** button to fill in the details with the product data of your choice. However, for the SKU, precede all of your SKU's with **TENANTTWO**. So, SKU one might be **TENANTTWO-ABC**. The key here is that we want to have _specific_ values that are prepended to your SKU that clearly identify the products as belonging to this specific tenant.
+**Step 17** - 이전과 마찬가지로 **Add Product** 버튼을 클릭하여 제품 세부 정보를 입력합니다. SKU의 경우 앞에 **TENANTTWO**를 추가합니다. 이는 테넌트에 속하는 제품을 명확하게 식별하도록 SKU 앞에 _구분자_ 값을 추가하는 것입니다.
 
 <p align="center"><img src="./images/lab3/part1/add_product2.png" alt="Lab 3 Part 1 Step 13 Add Product"/></p>
 
-**Step 18** - After completing this onboarding process and adding these products for two separate tenants, we can now go see how this data landed in DynamoDB tables that support this experience.
+**Step 18** - 두 개의 개별 테넌트에 대해 온보딩을 완료하고 제품을 추가 한 후, 이제 이 데이터가 DynamoDB 테이블에 어떻게 저장되었는지 확인 합니다.
 
-Navigate to the **DynamoDB** service in the AWS console and select **Tables** from the list of options at the top left of the page. Select the **ProductBootcamp** table and then the **Items** tab. Notice that the table is partitioned by `tenant_id`. You should be able to see the products you entered through the web application while logged in as the 2 different tenants (separate from the products you entered via the REST API earlier in the lab).
+AWS 콘솔에서 **DynamoDB** 서비스로 이동하고 페이지 왼쪽 상단의 옵션 목록에서 **Tables**을 선택합니다. **ProductBootcamp** 테이블을 선택한 다음 **Items** 탭을 선택합니다. 테이블은 `tenant_id`로 분할되어 있습니다. 두 개의 서로 다른 테넌트로 로그인 한 상태에서 웹 애플리케이션을 통해 입력 한 제품을 볼 수 있어야합니다 (실습의 앞부분에서 cURL을 통해 REST API를 호출하여 생성한 제품과는 별개).
 
 <p align="center"><img src="./images/lab2/part3/product_table.png" alt="Lab 2 Part 3 Step 18 Product Table"/></p>
 
-**Step 19** - If you review the **TenantBootcamp** table, you should see entries for the tenants you onboarded through the web application and their automatically generated GUIDs in the **tenant_id** field will match the **tenant_id** field in the entries in the **ProductBootcamp** table.
+**Step 19** - **TenantBootcamp** 테이블을 살펴보면, 온보딩 한 테넌트의 item들이 표시 되어야 하며 **ProductBootcamp** 테이블의 **tenant_id** 필드에 자동으로 생성 된 GUID가 **tenant_id**로 들어가 있어야 합니다.
 
-**Recap**: You've now elevated the mechanism of acquiring tenant context in our microservices by extracting our custom "claims" from the security token passed in the Authorization HTTP header. We reduced developer complexity in applying the tenant context by creating a custom TokenManager helper class that takes advantage of the Express framework's "middleware" concept to intercept all incoming requests prior to executing a REST resource's method.
+**Recap** : 이제 Authorization HTTP 헤더에 전달 된 보안 토큰에서 사용자 지정 **"claim"** 을 추출하여 테넌트 컨텍스트를 획득하는 메커니즘을 만들었습니다. 또한 request를 가로 테넌트 컨텍스트를 획득하는 TokenManager helper 클래스를 만들어 복잡성을 줄였습니다.
 
 [Continue to Lab 3](Lab3.md)
