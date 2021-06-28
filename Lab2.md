@@ -2,95 +2,100 @@
 
 ### Overview
 
-In our first lab, we focused all of our attention on getting tenants onboarding and creating a true notion of **SaaS Identity** where user identity was joined to a tenant identity. With those elements in place, we can now turn our attention to thinking about how we actually build the services and functionality of our application in a multi-tenant fashion. This means applying the tenant identity and context with the services that we build.
+첫 번째 실습에서는 테넌트를 온보딩하고 사용자 Identity가 테넌트 Identity에 결합 된 **SaaS Identity**를 만들었습니다. 이제 여러분은 멀티 테넌트 방식의 애플리케이션에 이 SaaS Identity를 적용 하는 모습을 살펴볼 것 입니다.
 
-So far, the services that we've created (tenant registration, user management, etc.) have all been about the fundamentals of onboarding. Now, let's look at the services that we'll introduce to support the actual functionality of our application. For this scenario, we're building a very basic order management system. It lets you create a product catalog and place orders against that catalog. It's important to note, that as a pooled isolation SaaS solution the compute and storage resources used to implement this functionality will be shared by all tenants.
+지금까지 우리가 만든 서비스(tenant registration, user manager 등)는 모두 온보딩의 기본 서비스들 입니다. 이제 애플리케이션의 실제 기능(예, 데이터 조회, 생성 등)을 제공할 서비스를 살펴 보겠습니다. 이를 위해 매우 기본적인 주문 관리 시스템 시나리오를 활용할 겁니다. 제품 카탈로그를 만들고 해당 제품에 대해 주문을 생성 할겁니다. <span style="color:blue">멀티 테넌트 SaaS 솔루션으로서 이 기능을 구현하는 데 사용되는 컴퓨팅 및 스토리지 리소스가 모든 테넌트들에 의해 공유 되고 있다는 점을 주목해야 합니다.</span>
 
-Below is a high level diagram of the services that will be delivering this functionality:
+아래는 만들게 될 서비스 레벨의 다이어그램 입니다.
 
 <p align="center"><img src="./images/lab2/arch_overview.png" alt="Lab 2 Architecture Overview"/></p>
 
-This is a very basic diagram that highlights the services and their interactions with the other aspects of the bootcamp's architecture. Notice that these services are connected to the web application via the **API Gateway**, exposing basic **CRUD** operations to create, read, update, and delete both products and orders.
+이러한 서비스는 **API Gateway**를 통해 웹 애플리케이션에 연결되어 기본 **CRUD** 작업을 노출하여 제품과 주문을 만들고, 읽고, 업데이트하고, 삭제할 수 있습니다.
 
-Of course as part of implementing these services, we have to think about what must be done to apply multi-tenancy to these services. These services will need to store data, log metrics, and acquire user identity all with multi-tenant awareness. So, we have to think about how this is achieved and applied within these services.
+물론 이러한 서비스를 구현할 때 이러한 서비스에 어떻게 멀티 테넌시 개념을 적용 할지 고려해야합니다. 이러한 서비스는 어떤 테넌트의 요청인지를 인식 한 상태에서 데이터를 저장하고 메트릭을 기록하고 user identity를 획득 해야합니다. 따라서 이런 부분이 서비스에 어떻게 적용될 수 있을지 고민해야 합니다.
 
-Below is a diagram that provides a conceptual view of what it means to build a multi-tenant aware microservice:
+다음은 다이어그램은 멀티 테넌트 관점의 마이크로 서비스 구축하는 것이 무엇을 의미하는지 보여줍니다.
 
 <p align="center"><img src="./images/lab2/multitenant_diagram.png" alt="Lab 2 Multi-Tenant Overview"/></p>
 
-This somewhat simplified diagram highlights the key areas we're going to focus on for the multi-tenant microservices we'll be deploying. At the center of the diagram are the actual services being built (in our case the product and order managers). Surrounding it are the areas where we need to factor in multi-tenancy. These include:
+이 다소 단순화 된 다이어그램은 우리가 배포 할 멀티 테넌트 마이크로 서비스가 갖춰야 하는 요소를 강조해 보여줍니다. 다이어그램의 중앙에는 기능을 제공하는 서비스(이 경우 product 및 order manager)가 있습니다. 그리고 그 주변에는 멀티 테넌시에 포함되어야 하는 요소가 있습니다. 이 요소들은 다음과 같습니다:
 
-* **Identity and Tenant Context** – our services need some standard way to acquire the current user's role and authorization along with the tenant context. Almost every action within your services happens in the context of a tenant so we'll need to think about how we acquire and apply that context.
-* **Multi-Tenant Data Partitioning** – our two services will need to store data. This means our storage CRUD operations will all need some injection of tenant context to figure out how to partition, persist, and acquire data in a multi-tenant model.
-* **Tenant Aware Logging, Metering, and Analytics** – as we record logs and metrics about activity in our system, we'll need some way to attribute those activities to a specific tenant. Our services must inject this context into any activity messages that are published for troubleshooting or downstream analytics.
- 
-This backdrop provides you with a view of the fundamental concepts that we'll explore in this lab. While we won't be writing services from scratch, we'll be highlighting how a service will evolve to incorporate these concepts.
+- **Identity and Tenant Context** – 저희 서비스에는 테넌트 컨텍스트와 함께 현재 사용자의 역할 및 권한을 획득하기 위한 표준 방법이 필요합니다. 서비스 안의 거의 모든 작업은 테넌트 컨텍스트 안에서 발생하므로 해당 컨텍스트를 획득하고 적용하는 방법에 대해 생각해야합니다.
+- **Multi-Tenant Data Partioning** – 두 서비스(product, order)는 데이터를 저장해야합니다. 즉, 스토리지 CRUD 작업은 모두 멀티 테넌트 모델에서 데이터를 분할, 유지 및 수집 하기 위해 테넌트 컨텍스트를 주입 해야 합니다.
+- **Tenant Aware Logging, Metering, and Analytics** – 시스템의 활동에 대한 로그 및 메트릭을 기록 할 때 이러한 활동어 어떤 테넌트의 것인지 식별할 수 있어야 합니다. 따라서 서비스들은 향후 문제 해결 또는 분석을 위해 모든 이벤트/활동 메시지 에 이 테넌트 컨텍스트를 주입 해야합니다.
 
-### What You'll Be Building
-To demonstrate the multi-tenant concepts, we'll go through an evolutionary process where we gradually add multi-tenant awareness to our solution. We'll start with a single-tenant version of our product manager service, then progressively add the bits needed to make this a fully multi-tenant aware service. The basic steps in this process include:
-* Deploy a single-tenant product manager microservice – this is a baseline step to illustrate what the service looks like before we begin to layer on the elements of multi-tenancy. It will be a basic CRUD service with no multi-tenant awareness.
-* Introduce multi-tenant data partitioning – the first phase of multi-tenancy will be to add the ability to partition data based on a tenant identifier supplied as part of an incoming request.
-* Extract tenant context from user identity – add the ability to use the security context of HTTP calls into the service to extract and apply tenant identity for our data partitioning scheme.
-* Introduce a second tenant to demonstrate partitioning – register a new tenant and manage products through that tenant context to illustrate how the system has successfully partitioned the data in the application.
+이런 요소들이 어떻게 만들어지고 동작하는지 이번 실습을 통해 살펴 볼겁니다. 물론 이것들을 모두 처음 부터 개발 하지는 않고 실습을 위해 미리 만들어진 것을 사용 할겁니다.
+
+### 실습에서 만드는 것들
+
+- **단일 테넌트 제품 관리자 마이크로 서비스를 배포** - 이것은 위에서 언급한 세 가지 멀티 테넌시의 요소를 반영 하기 전에 서비스가 어떻게 동작하 하는지 살펴 보는 단계 입니다. 즉 멀티 테넌트 관점이 반영되지 않은 기본적인 CRUD 서비스가 될 것입니다.
+- **멀티 테넌트 데이터 파티셔닝 도입** – 멀티 테넌트 관점 도입의 첫 번째 단계는, 입수되는 요청에 포함된 테넌트 식별자를 기반으로 데이터를 파티셔닝하는 기능을 추가하는 것입니다.
+- **User identity 에서 Tenant Context 추출** – 데이터 파티셔닝을 위해 사용될 Tenant identity를 추출 하고 적용하기 위해서 HTTP 호출에 포함된 보안 컨텍스트 사용하는 기능을 추가 합니다.
+- **파티셔닝 동작 확인을 위한 두 번째 테넌트 온보딩** – 새 테넌트를 등록하고 해당 테넌트 컨텍스트를 통해 제품을 관리하여 시스템이 애플리케이션에서 데이터를 성공적으로 분할 하는 방법을 보여줍니다.
+- **테넌트 컨텍스트를 사용하여 데이터 로깅** – 마지막 단계에서는 테넌트 중심 분석을 지원하기 위해 테넌트 컨텍스트를 로그 및 측정에 삽입하는 방법을 시연합니다.
+
+이 프로세스가 마지막으로 완료되면 데이터 파티셔닝, User Identity 에서 테넌트 컨텍스트 추출 및 로그에 Tenant identity 삽입 기능을 모두 지원하는 완전한 멀티 테넌트 인식 제품 관리 서비스가 만들어져 있을겁니다.
 
 ## Part 1 - Deploying a Single-Tenant Product Manager Service
 
-Before we can see how multi-tenancy influences the business services of our application, we need to see a baseline single-tenant service in action. This will provide a foundation for our exploration of multi-tenancy, illustrating how multi-tenancy influences the implementation of our microservice.
+멀티 테넌트 애플리케이션을 만들기 전에, Product Manager 서비스를 먼저 싱글 테넌트 형태로 만들어 동작을 점검해보겠습니다. 이를 통해 나중에 멀티 테넌트 형태일 때 이 서비스가 어떻게 동작할지 가늠할 수 있을겁니다.
 
-In this basic model, we'll deploy a service, create a **DynamoDB** table to hold our product data, then use cURL from the command line to exercise this new service.
+실습을 위해 마련된 배포 스크립트를 실행하여 서비스를 배포한 다음, 이 서비스가 사용할 **DynamoDB** 테이블을 만들 겁니다. 그리고 cURL을 활용해 이 서비스를 실행하여 동작을 확인 할겁니다. 참고로 이 서비스는 API Gateway를 통해 노출 되는데, 이 설정은 배포 스크립트에 의해 자동으로 완료 될겁니다.
 
-**Step 1** - Let's start this process by taking a closer look at the single-tenant service that we'll be deploying. Like the prior services implemented in the first lab, the product manager microservice is built with Node.js and Express. It exposes a series of CRUD operations via a REST interface.
+**Step 1** - 먼저 배포할 product manager 서비스를 살펴보겠습니다. 이 서비스는 REST 인터페이스를 통해 일련의 CRUD 작업을 노출합니다. 이 파일의 소스 코드는`Lab2/Part1/app/source/product-manager/src/server.js`에서 확인할 수 있습니다.
 
-The source code for this file is available at `Lab2/Part1/product-manager/server.js`.
+코드를 보면 REST 메소드 (app.get (...), app.post (...) 등)에 해당하는 여러 진입 점이 표시됩니다. 이러한 각 함수에는 해당 REST 작업이 구현되어 있습니다. 여기서 무슨 일이 일어나고 있는지 이해하기 위해 메소드 중 하나를 자세히 살펴 보겠습니다.
 
-In looking at this file, you'll see a number of entry points that correspond to the REST methods (`app.get(...)`, `app.post(...)`, etc.). Within each of these functions is the implementation of the corresponding REST operation. Let's take a look at one of these methods in more detail to get a sense of what's going on here.
+`/product` 패스와 매핑된 GET 메소드를 살펴 보면 요청에 포함된 `params`으로 id를 추출한 다음 이를 함수의 나머지 부분에 포함된 DynamoDBHelper 호출에 실어 DynamoDB 테이블에서 item을 가져 옵니다.
 
 ```javascript
-app.get('/product/:id', function (req, res) {
-    winston.debug('Fetching product: ' + req.params.id);
-    // init params structure with request params
-    var params = {
-        product_id: req.params.id
-    };
-    tokenManager.getSystemCredentials(function (credentials) {
-        // construct the helper object
-        var dynamoHelper = new DynamoDBHelper(productSchema, credentials, configuration);
-        dynamoHelper.getItem(params, credentials, function (err, product) {
-            if (err) {
-                winston.error('Error getting product: ' + err.message);
-                res.status(400).send('{"Error" : "Error getting product"}');
-            } else {
-                winston.debug('Product ' + req.params.id + ' retrieved');
-                res.status(200).send(product);
-            }
-        });
+app.get("/product/:id", function (req, res) {
+  winston.debug("Fetching product: " + req.params.id);
+  // init params structure with request params
+  var params = {
+    productId: req.params.id,
+  };
+  tokenManager.getSystemCredentials(function (credentials) {
+    // construct the helper object
+    var dynamoHelper = new DynamoDBHelper(
+      productSchema,
+      credentials,
+      configuration
+    );
+    dynamoHelper.getItem(params, credentials, function (err, product) {
+      if (err) {
+        winston.error("Error getting product: " + err.message);
+        res.status(400).send('{"Error" : "Error getting product"}');
+      } else {
+        winston.debug("Product " + req.params.id + " retrieved");
+        res.status(200).send(product);
+      }
     });
+  });
 });
 ```
 
-Let's start by looking at the signature of the method. Here you'll see the traditional REST path for a GET method with the `/product` resource followed by an identifier parameter that indicates which product is to be fetched. This value is extracted from the incoming request and populated into a `params` structure. The rest of this function is about calling our DynamoDBHelper, which is our data access layer, to fetch the item from a DynamoDB table.
-
-**Step 2** - Our first step is to deploy the single-tenant product manager, within our Cloud9 IDE. Navigate to `Lab2/Part1/product-manager` directory, right-click `deploy.sh`, and click **Run** to execute the shell script.
+**Step 2** - 이제 Cloud9 IDE를 통해 싱글 테넌트 형태의 product manager를 배포해 보겠습니다. `Lab2/Part1/scripts` 디렉토리로 이동하여`product-manager-v1.sh`를 마우스 오른쪽 버튼으로 클릭 한 다음 **Run**을 클릭하여 셸 스크립트를 실행합니다.
 
 <p align="center"><img src="./images/lab2/part1/cloud9_run_script.png" alt="Lab 2 Part 1 Step 2 Cloud9 Run Script"/></p>
 
-**Step 3** - Wait for the `deploy.sh` shell script to execute successfully.
+**Step 3** - **Process exited with code : 0** 메시지 다음에 **STACK CREATE COMPLETE** 이 표시되며 `product-manager-v1.sh` 셸 스크립트가 성공적으로 완료될 때까지 기다립니다.
 
 <p align="center"><img src="./images/lab2/part1/cloud9_run_script_complete.png" alt="Lab 2 Part 1 Step 3 Cloud9 Script Finished"/></p>
 
-**Step 4** - Now that our service is deployed, we have to introduce its supporting elements. Let's start by creating the DynamoDB table that will be used to store product information. First, navigate to the DynamoDB service in the AWS console and select the **Tables** option from the navigation list in the upper left-hand side of the page.
+**Step 4** - 서비스가 정상적으로 배포 되었으니, 제품 정보를 저장하는 데 사용할 DynamoDB 테이블을 생성하겠습니다. 먼저 AWS 콘솔에서 DynamoDB 서비스로 이동하고 페이지 왼쪽 상단의 탐색 목록에서 **Tables** 옵션을 선택합니다.
 
 <p align="center"><img src="./images/lab2/part1/dynamo_menu_tables.png" alt="Lab 2 Part 1 Step 4 DynamoDB Menu Tables"/></p>
 
-**Step 5** - Now click the **Create table** button at the top of the page. Enter a table name of **ProductBootcamp** and enter **product_id** as the primary key. The table and key names are case sensitive in DynamoDB. Be sure you enter the values correctly. Once you've filled out the form, select the **Create** button at the bottom right of the page to create your new table.
+**Step 5** - 이제 페이지 상단의 **Create table** 버튼을 클릭합니다. **ProductBootcamp**라는 테이블 이름을 입력하고 **productId**를 기본 키로 입력합니다. 테이블 및 키 이름은 DynamoDB에서 대소 문자를 구분합니다. 따라서 값을 올바르게 입력했는지 확인하세요. 값을 모두 입력한 후 페이지 오른쪽 하단의 **Create** 버튼을 선택하여 새 테이블을 만듭니다.
 
 <p align="center"><img src="./images/lab2/part1/dynamo_create_table.png" alt="Lab 2 Part 1 Step 5 DynamoDB Create Table"/></p>
 
-**Step 6** - At this point the table should be created and your service should be running and accessible via the **Amazon API Gateway**. First, we need the API Gateway URL that exposes our microservices. Navigate to API Gateway in the AWS console and select the **saas-bootcamp-api** API.
+**Step 6** - 이제 테이블이 생성 되었고 서비스가 실행되고 **Amazon API Gateway**를 통해 액세스 할 수 있어야합니다. 서비스에 액세스 하기 위해서 API Gateway URL이 필요합니다. AWS 콘솔에서 API Gateway로 이동하고 **saas-bootcamp-api** API를 선택합니다. 이 API는 부트 캠프 환경에서 자동으로 생성 되었으며 실습에서 사용할 SaaS 애플리케이션을 실행하는 데 필요한 모든 리소스와 메소드를 포함합니다.
 
 <p align="center"><img src="./images/lab2/part1/apigw_select_api.png" alt="Lab 2 Part 1 Step 6 API Gateway Select API"/></p>
 
-**Step 7** - Select **Stages** from the left-hand menu and then click on the **v1** (version 1) stage. The invocation URL will be displayed. This is the base URL (_including **/v1** at the end_) that all of your microservices will be accessible from.
+**Step 7** - 왼쪽 메뉴에서 **Stages**를 선택한 다음 **v1** (version 1) 단계를 클릭합니다. 호출 URL이 표시됩니다. 모든 마이크로 서비스에 액세스 할 수있는 기본 URL (_ 끝에 **/v1** 포함_)입니다.
 
 <p align="center"><img src="./images/lab2/part1/apigw_invoke_url.png" alt="Lab 2 Part 1 Step 6 API Gateway Select API"/></p>
 
@@ -129,25 +134,29 @@ The steps that follow will take you through the process of adding these capabili
 This file doesn't look all that different than our prior version. In fact, the only change here is that we've added a tenant identifier to the parameters that we supply to the DynamoDBHelper. Below is a snippet of the code from our file.
 
 ```javascript
-app.post('/product', function(req, res) {
-	var product = req.body;
-	var guid = uuidv4();
-	product.product_id = guid;
-	product.tenant_id = req.body.tenant_id;
-	winston.debug(JSON.stringify(product));
-	// construct the helper object
-	tokenManager.getSystemCredentials(function(credentials) {
-		var dynamoHelper = new DynamoDBHelper(productSchema, credentials, configuration);
-		dynamoHelper.putItem(product, credentials, function(err, product) {
-			if (err) {
-				winston.error('Error creating new product: ' + err.message);
-				res.status(400).send('{"Error": "Error creating product"}');
-			} else {
-				winston.debug('Product ' + req.body.title + ' created');
-				res.status(200).send({status: 'success'});
-			}
-		});
-	});
+app.post("/product", function (req, res) {
+  var product = req.body;
+  var guid = uuidv4();
+  product.product_id = guid;
+  product.tenant_id = req.body.tenant_id;
+  winston.debug(JSON.stringify(product));
+  // construct the helper object
+  tokenManager.getSystemCredentials(function (credentials) {
+    var dynamoHelper = new DynamoDBHelper(
+      productSchema,
+      credentials,
+      configuration
+    );
+    dynamoHelper.putItem(product, credentials, function (err, product) {
+      if (err) {
+        winston.error("Error creating new product: " + err.message);
+        res.status(400).send('{"Error": "Error creating product"}');
+      } else {
+        winston.debug("Product " + req.body.title + " created");
+        res.status(200).send({ status: "success" });
+      }
+    });
+  });
 });
 ```
 
@@ -156,22 +165,25 @@ The line `product.tenant_id = req.body.tenant_id;` represents the only change yo
 **Step 2** - Up to this point, we haven't really looked at the **DynamoDBHelper** to see how it accommodates our ability to get items from the DynamoDB table. This module is a wrapper of the AWS-provided DynamoDB client with some added elements to support isolation. In fact, even as we're introducing this tenant identifier model, it does not change how DynamoDBHelper processes this request. Below is a snipped of code from the DynamoDBHelper for the `getItem()` method:
 
 ```javascript
-DynamoDBHelper.prototype.getItem = function(keyParams, credentials, callback) {
-    this.getDynamoDBDocumentClient(credentials, function (error, docClient) {
-        var fetchParams = {
-            TableName: this.tableDefinition.TableName,
-            Key: keyParams
+DynamoDBHelper.prototype.getItem = function (keyParams, credentials, callback) {
+  this.getDynamoDBDocumentClient(
+    credentials,
+    function (error, docClient) {
+      var fetchParams = {
+        TableName: this.tableDefinition.TableName,
+        Key: keyParams,
+      };
+      docClient.get(fetchParams, function (err, data) {
+        if (err) {
+          winston.debug(JSON.stringify(docClient.response));
+          callback(err);
+        } else {
+          callback(null, data.Item);
         }
-        docClient.get(fetchParams, function(err, data) {
-            if (err) {
-                winston.debug(JSON.stringify(docClient.response));
-                callback(err);
-            } else {
-                callback(null, data.Item);
-            }
-        });
-    }.bind(this));
-}
+      });
+    }.bind(this)
+  );
+};
 ```
 
 You'll notice that we're passing through all the parameters that we constructed in our product manager service as the `keyParams` value in the `fetchParams` structure. The client will simply use the parameters to match the partition key for the table. The takeaway here is that nothing unique is done in the code to support the partitioning by a tenant identifier. It's simply just another key in our DynamoDB table.
@@ -199,6 +211,7 @@ Navigate to the DynamoDB service in the AWS console and select the **Tables** op
 ```bash
 curl -w "\n" --header "Content-Type: application/json" INVOKE-URL/product/health
 ```
+
 **Be sure you've included the API stage name at the end of the URL before /product/health.** You should get a JSON formatted success message from the **cURL** command indicating that the request was successfully processed and the service is ready to process requests.
 
 **Step 8** - Now that we know the service is up-and-running, we can add a new product to the catalog via the REST API. Unlike our prior REST call, this one must provide the tenant identifier as part of the request. Submit the following REST command to create a product for tenant "**123**". Copy and paste the following command (be sure to scroll to select the entire command), replacing **INVOKE-URL** with the URL and trailing stage name you captured from the API Gateway settings.
@@ -237,14 +250,20 @@ Version 3 of our product manager service introduces a new **TokenManager** helpe
 
 ```javascript
 app.use(function (req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE");
-    res.header("Access-Control-Allow-Headers", "Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
-    bearerToken = req.get('Authorization');
-    if (bearerToken) {
-        tenantId = tokenManager.getTenantId(req);
-    }
-    next();
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header(
+    "Access-Control-Allow-Methods",
+    "GET, POST, OPTIONS, PUT, PATCH, DELETE"
+  );
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With"
+  );
+  bearerToken = req.get("Authorization");
+  if (bearerToken) {
+    tenantId = tokenManager.getTenantId(req);
+  }
+  next();
 });
 ```
 
@@ -255,26 +274,30 @@ You'll see after the response headers are set, the bearer token is extracted fro
 **Step 2** - Now that you have the tenant identifier, the application of this is relatively straightforward. You can see that we've changed the way we're acquiring the tenant identifier, referencing the **tenantId** that we extracted from the bearer token in the middleware in Step 1 (instead of pulling this from the incoming requests).
 
 ```javascript
-app.get('/product/:id', function(req, res) {
-	winston.debug('Fetching product: ' + req.params.id);
-	// init params structure with request params
-	var params = {
-		tenant_id: tenantId,
-		product_id: req.params.id
-	};
-	tokenManager.getSystemCredentials(function(credentials) {
-		// construct the helper object
-		var dynamoHelper = new DynamoDBHelper(productSchema, credentials, configuration);
-		dynamoHelper.getItem(params, credentials, function(err, product) {
-			if (err) {
-				winston.error('Error getting product: ' + err.message);
-				res.status(400).send('{"Error": "Error getting product"}');
-			} else {
-				winston.debug('Product ' + req.params.id + ' retrieved');
-				res.status(200).send(product);
-			}
-		});
-	});
+app.get("/product/:id", function (req, res) {
+  winston.debug("Fetching product: " + req.params.id);
+  // init params structure with request params
+  var params = {
+    tenant_id: tenantId,
+    product_id: req.params.id,
+  };
+  tokenManager.getSystemCredentials(function (credentials) {
+    // construct the helper object
+    var dynamoHelper = new DynamoDBHelper(
+      productSchema,
+      credentials,
+      configuration
+    );
+    dynamoHelper.getItem(params, credentials, function (err, product) {
+      if (err) {
+        winston.error("Error getting product: " + err.message);
+        res.status(400).send('{"Error": "Error getting product"}');
+      } else {
+        winston.debug("Product " + req.params.id + " retrieved");
+        res.status(200).send(product);
+      }
+    });
+  });
 });
 ```
 
@@ -283,18 +306,18 @@ app.get('/product/:id', function(req, res) {
 Below is a snippet of the code from the TokenManager that is invoked to extract the token. This function extracts the security token from the Authorization header of the HTTP request, decodes it, then acquires the tenantId from the decoded token. _In a production environment, this unpacking would use a signed certificate as a security measure to ensure the token contents were not modified during transmission_.
 
 ```javascript
-module.exports.getTenantId = function(req) {
-    var tenantId = '';
-    var bearerToken = req.get('Authorization');
-    if (bearerToken) {
-        bearerToken = bearerToken.substring(bearerToken.indexOf(' ') + 1);
-        var decodedIdToken = jwtDecode(bearerToken);
-        if (decodedIdToken) {
-            tenantId = decodedIdToken['custom:tenant_id'];
-        }
+module.exports.getTenantId = function (req) {
+  var tenantId = "";
+  var bearerToken = req.get("Authorization");
+  if (bearerToken) {
+    bearerToken = bearerToken.substring(bearerToken.indexOf(" ") + 1);
+    var decodedIdToken = jwtDecode(bearerToken);
+    if (decodedIdToken) {
+      tenantId = decodedIdToken["custom:tenant_id"];
     }
-    return tenantId;
-}
+  }
+  return tenantId;
+};
 ```
 
 **Step 4** - Now that you have a better sense of how we've introduced tenant context through HTTP headers, let's go ahead and deploy version 3 of the product manager, within our Cloud9 IDE. Navigate to `Lab2/Part3/product-manager/` directory, right-click `deploy.sh`, and click **Run** to execute the shell script.
@@ -332,6 +355,7 @@ After you've successfully changed your password, you'll be logged into the appli
 <p align="center"><img src="./images/lab2/part3/catalog.png" alt="Lab 2 Part 3 Step 12 Catalog Page"/></p>
 
 **Step 13** - With the **Catalog** page open, select the **Add Product** button from the top right of the page. Fill in the details with the product data of your choice. However, for the **SKU**, precede all of your SKU's with **TENANTONE**. So, SKU one might be "**TENANTONE-ABC**". The key here is that we want to have _specific_ values that are prepended to your SKU that clearly identify the products as belonging to this specific tenant.
+
 <p align="center"><img src="./images/lab3/part1/add_product1.png" alt="Lab 3 Part 1 Step 7 Add Product"/></p>
 
 **Step 14** - Once you've added a couple of products for one of your tenants, select the dropdown menu with your tenant name at the top right of the screen and select **Logout**. This will return you to the login page.
