@@ -99,7 +99,7 @@ app.get("/product/:id", function (req, res) {
 
 <p align="center"><img src="./images/lab2/part1/apigw_invoke_url.png" alt="Lab 2 Part 1 Step 6 API Gateway Select API"/></p>
 
-**Step 8** - Now let's verify that the basic plumbing of our Product Manager service is in place by making a simple call to its health check endpoint. For this step and subsequent steps, you can use either **cURL** or Postman (or the tool of your choice). Let's invoke the GET method on `/product/health` to verify that the service is running. Copy and paste the following command, replacing **INVOKE-URL** with the URL and trailing stage name you captured from the API Gateway settings.
+**Step 8** - 이제 서비스를 직접 호출해보겠습니다. 이를 위해 **cURL** 또는 Postman (또는 원하는 도구)을 사용할 수 있습니다. 서비스가 실행 중인지 확인하기 위해`/product/health`에서 GET 메서드를 호출 해 보겠습니다. 다음 명령을 복사하여 붙여넣고 **INVOKE-URL**을 API Gateway 설정에서 캡처 한 URL 바꿉니다.
 
 ```bash
 curl -w "\n" --header "Content-Type: application/json" INVOKE-URL/product/health
