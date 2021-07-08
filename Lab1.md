@@ -28,10 +28,10 @@
 
 실습 1 에서 여러분은 다음과 같은 작업들을 통해 SaaS 온보딩과 인증 체계를 구현해 볼겁니다.
 
-- User Identity 생성과 관리: 이를 위해 여러분은 사용자를 관리하고 User identity를 다루기 위해 Amazon Cognito로 부터 User Pool 을 사용할 겁니다. 이를 위해 Amazon Cognito 환경을 셋업 하고 이를 활용하는 User Management 모듈의 마이크로서비스를 배포할 겁니다.
-- 테넌트 생성과 관리: 그 다음, 여러분은 테넌트 데이터를 저장 하는데 사용되는 DynamoDB 데이터베이스를 생성할 겁니다. 그런 다음 Tenant Management 라는 마이크로서비스를 배포 할겁니다.
-- Tenant Onboarding 활성화: 이제 User와 테넌트를 표한할 방법을 마련 했으므로, 여러분은 이제 Tenant Registration 마이크로서비스를 더하고 다른 마이크로서비스들과 이를 연결하기 위한 설정 작업을 할겁니다. 그런다음 여러분은 테넌트를 온보딩 시키고 이때 시스템이 필요한 요소를 적절하게 생성했는지 검증 할겁니다.
-- 사용자 인증: 이제 여러분은 새로운 테넌트를 생성 했으므로, 여러분은 시스템에 대한 인증을 처리할 수 있게 될겁니다. 여러분은 이제 인증과 온보딩 프로세스를 처리하는 오케스트레이션 서비스를 배포 할겁니다.
+- <span style="color:blue">**User Identity 생성과 관리**</span>: 이를 위해 여러분은 사용자를 관리하고 User identity를 다루기 위해 Amazon Cognito로 부터 User Pool 을 사용할 겁니다. 이를 위해 Amazon Cognito 환경을 셋업 하고 이를 활용하는 User Management 모듈의 마이크로서비스를 배포할 겁니다.
+- <span style="color:blue">**테넌트 생성과 관리**</span>: 그 다음, 여러분은 테넌트 데이터를 저장 하는데 사용되는 DynamoDB 데이터베이스를 생성할 겁니다. 그런 다음 Tenant Management 라는 마이크로서비스를 배포 할겁니다.
+- <span style="color:blue">**Tenant Onboarding 활성화**</span>: 이제 User와 테넌트를 표한할 방법을 마련 했으므로, 여러분은 이제 Tenant Registration 마이크로서비스를 더하고 다른 마이크로서비스들과 이를 연결하기 위한 설정 작업을 할겁니다. 그런다음 여러분은 테넌트를 온보딩 시키고 이때 시스템이 필요한 요소를 적절하게 생성했는지 검증 할겁니다.
+- <span style="color:blue">**사용자 인증**</span>: 이제 여러분은 새로운 테넌트를 생성 했으므로, 여러분은 시스템에 대한 인증을 처리할 수 있게 될겁니다. 여러분은 이제 인증과 온보딩 프로세스를 처리하는 오케스트레이션 서비스를 배포 할겁니다.
 
 **Note**: 본 문서에서 참고 하는 코드는 다음 리파지토리에서 확인 할 수 있습니다: https://github.com/aws-samples/aws-saas-factory-bootcamp
 

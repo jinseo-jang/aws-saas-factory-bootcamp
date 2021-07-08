@@ -32,16 +32,14 @@ Isolation 모델 구현의 두 번째 단계는, 테넌트가 리소스에 액�
 
 1️⃣ `GET` 요청이 Product Manager 서비스로 들어 오면 Cognito로 `getCredentialsForIdentity ()`호출을 통해 토큰(idToken)을 전달합니다. 2️⃣ **그런 다음 Cognito는 해당 토큰을 열어서 테넌트 식별자와 사용자 역할을 검사하고 프로비저닝 중에 생성 된 정책 중 하나와 매핑 합니다.** 3️⃣ 그런 다음 STS를 통해 **임시** 자격 증명(Credentials)세트 (다이그램 하단에 표시됨)를 생성하고 이를 Product Manager 서비스로 반환합니다. 4️⃣ Product Manager 서비스는 이러한 임시 자격 증명(Credentials)을 사용하여 이 자격 증명이 _tenan id_ 별 액세스 범위를 지정한다는 확신을 가지고 DynamoDB 테이블에 액세스합니다.
 
-### What You'll Be Building
+### 실습에서 만드는 것들
 
-Our goal in this exercise is to walk you through the configuration and creation of some of the elements that are part of this process. While the concepts are helpful above, we want to expose you to some of the specifics of how they are used in our reference solution. We'll start by introducing the policies during provisioning and how to configure Cognito to connect our policies to user roles. Lastly, we'll look at how this lands in the code of our application services. The basic steps in this process include:
+- **교차 테넌트 액세스의 예시** – 먼저 지정된 정책과 scope 없이 테넌트 간 데이터에 교차 접근 하는 상황을 만들어 봅니다.
+- **미리 프로비전된 IAM 정책 구성** – 이제 교차 테넌트 액세스 하는 예를 보았으므로 교차 테넌트 액세스(의도된 또는 의도하지 않은)를 방지하는 데 사용할 수 있는 정책을 도입 합니다. 다양한 역할/리소스 조합에 대한 정책을 생성하여 이러한 정책이 DynamoDB 테이블에 대한 액세스 범위를 지정하는 데 어떻게 사용되는지 이해할 수 있게 될겁니다. 그런 다음 새 테넌트를 프로비저닝하고 이러한 정책이 새 테넌트의 IAM에 어떻게 표시되는지 확인합니다.
+- **사용자의 역할에 IAM 정책 매핑** – Cognito를 사용하여 사용자 역할을, 우리가 생성한 IAM 정책에 매핑 하는 규칙을 생성할 수 있습니다. 이 부분에서는 이러한 IAM 정책이 테넌트 및 사용자의 역할에 대해 어떻게 설정 되는지 확인할 수 있습니다.
+- **Tenant-scoped 자격 증명(credentials) 획득** – 마지막으로 위에 설명된 IAM 정책에 따라 테넌트가 접근 가능한 범위(scope)가 지정된 자격 증명(credential)을 획득하는 방법을 확인 합니다. 이 자격 증명(credentials)은 데이터에 대한 액세스를 제어합니다. 이것이 어떻게 명시적으로 테넌트 간 범위 지정을 적용하는지 알 수 있습니다.
 
-- **Example of Cross Tenant Access** – first you'll look at how, without policies and scoping, a developer can create a situation that violates the cross-tenant boundaries of the system.
-- **Configure the Provisioned IAM Policies** – now that you've seen an example of cross tenant access, let's start to introduce policies that can be used to prevent cross-tenant access (intended or un-intended). You'll create a policy for different role/resource combinations to get a sense of how these policies are used to scope access to DynamoDB tables. You'll then provision a new tenant and see how these policies are represented in IAM.
-- **Mapping User Roles to Policies** – with Cognito, we can create rules that determine how a user's role will map to the policies that we've created. In this part you'll see how these policies have been configured for our tenant and user roles.
-- **Acquiring Tenant-Scoped Credentials** – finally you'll see how to orchestrate the acquisition of credentials that are scoped by the policies outlined above. The credentials will control our access to data. You'll see how this explicitly enforces cross-tenant scoping.
-
-With this piece in place, you'll have added a robust mechanism to your solution that much more tightly controls and scopes access to tenant resources. This solution highlights one of many strategies that could be applied to enforce tenant isolation.
+이상의 것들을 만들면 테넌트가 교차 접근을 보다 엄격하게 제어하는 메카니즘을 서비스에 추가 할 수 있습니다.
 
 ## Part 1 - Example of Cross-Tenant Access
 
