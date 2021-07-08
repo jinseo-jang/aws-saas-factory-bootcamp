@@ -2,46 +2,49 @@
 
 ### Overview
 
-At this stage, we have addressed many of the core elements of SaaS architecture. What we really haven't touched on, though, is tenant isolation. As a SaaS provider, you must make every attempt to ensure that each tenant's resources are protected from any kind of cross-tenant access. This is especially challenging when these tenants are sharing elements of their infrastructure. If, for some reason, one tenant was able to access another tenant's environment, that could represent a huge setback for a SaaS business.
+앞서 SaaS 아키텍처의 많은 핵심 요소를 다루었습니다. 하지만 아직 다루지 않은 부분이 바로 Tenant isolation 입니다. SaaS 공급자는 각 테넌트의 리소스가 모든 종류의 교차 테넌트 액세스로부터 보호되도록 해야합니다. 그런데 이 부분이, 모든 테넌트가 인프라 리소스를 모두 공유 하는 상황에서는 달성하기 어렵습니다.
 
-To address this, we must move beyond basic authentication. We must introduce policies and access controls that ensure that we are doing everything we can to isolate and protect tenant environments. Even in SaaS environments where resources are not shared, we must take extra measures to be sure that we've minimized our exposure to cross-tenant access.
+이를 해결하려면 기본적인 인증 이상의 것이 필요 합니다. 즉, 테넌트 환경을 격리하고 보호 한다는 것을 보장 할 수 있는 정책과 액세스 제어를 도입해야합니다. 이건 심지어, 리소스가 공유되지 않는 SaaS 환경에서도 교차 테넌트 액세스에 대한 노출을 최소화하기 위해 추가 조치의 하나로 꼭 필요 합니다.
 
-For this bootcamp, we'll focus squarely on how to isolate the data that resides in our DynamoDB tables. Specifically, we want to look at how can we can successfully isolate the tenant data that resides in the product and order tables that hold application data. To achieve this, we need to consider how we've partitioned the data. Below is a diagram that highlights the partitioning scheme of the product and order tables.
+이번 실습 에서는 DynamoDB 테이블에 있는 데이터를 분리하는 방법에 초점을 맞출 것입니다. 특히 제품과 주문 테이블을 예시로, 어떻게 테넌트 데이터를 격리하고 분리 할 수 ​​있는지 살펴 보겠습니다. 이를 위해 먼저 데이터를 분할하는 방법을 고려해야합니다. 아래는 제품 및 주문 테이블의 파티션을 나타낸 그림 입니다.
 
 <p align="center"><img src="./images/lab3/table_partitioning.png" alt="Lab 3 Isolating Tenant Data Overview Table Partitioning"/></p>
 
-In this example graphic, you'll see that we have data from multiple tenants living side-by-side as items in these tables. So, if I get access to one of these tables, I could presumably get access to any tenant's data.
+그림을 보면 여러 테넌트의 데이터(item)가 한 테이블에 함께 위치 합니다. 따라서 이러한 테이블 중 하나에 액세스하면 모든 테넌트의 데이터에 액세스 할 수 있습니다.
 
-Our goal then is to implement a security model that can scope access to these tables down to the item level. Essentially, I want to build a view of the table that constrains access to just those items that are valid for a given tenant.
+저희의 목표는 **이러한 테이블에 대한 액세스 정책의 범위를 item 수준까지 지정할 수있는 보안 모델을 구현하는 것입니다.** 즉, 기본적으로 테넌트 자기 자신에게만 해당되는 item에 액세스 할 수 있도록 제한 하는 겁니다.
 
-For this bootcamp, we're going to leverage a combination of Amazon Cognito, Amazon Identity and Access Management (IAM), and AWS Security Token Service
-(STS) to limit access to these tables. This will connect directly to the notion of SaaS identity we discussed earlier, leveraging the tokens from the experience to bind a user to a scoped set of policies.
+이를 위해 이번 실습에서, Amazon Cognito, Amazon Identity and Access Management (IAM), AWS Security Token Service (STS)의 조합을 활용해 테이블 데이터(item)접근을 제한 합니다. 즉 이 서비스 조합을 활용해, 앞에서 논의한 SaaS Identity에 사용자의 접근 정책을 바인딩 하는 하여 데이터(item)접근을 제한 합니다.
 
-There are two key phases to implementing this isolation model. First, when tenants are initially provisioned, we need to create a set of IAM roles for each tenant. For every role that exists in the tenant's environment, we must create policies that scope access to the system's resource for that tenant. Below you'll see a conceptual representation of this the onboarding process and how it creates these roles for each tenant.
+이 Isolation 모델을 구현하는 데는 두 가지 주요 단계가 있습니다. 첫번째 단계는, 테넌트가 처음 프로비저닝 될 때 각 테넌트에 대한 IAM Role 세트를 생성 해야 합니다. 테넌트의 환경에 존재하는 모든 역할에 대해 해당 테넌트의 시스템 리소스에 대한 액세스 범위를 지정하는 정책(IAM Policy)을 만들어야합니다. 아래 그림 에서는 이 온보딩 프로세스의 개념적 표현과 각 테넌트에 대해 이러한 Role을 만드는 방법을 볼 수 있습니다.
 
 <p align="center"><img src="./images/lab3/onboarding.png" alt="Lab 3 Isolating Tenant Data Overview Onboarding"/></p>
 
-On the left is the registration process we built in Lab 1. On the right are collections of policies that are emitted (behind the scenes) for each role. It's important to note that you are not required to have separate roles for each user. Instead, these roles apply to all users for that tenant.
+왼쪽에는 Lab 1에서 구축 한 Registration 프로세스가 있습니다. 오른쪽에는 각 역할에 대해 생성되는 정책 모음이 있습니다. 개별 User 마다 별도의 정책을 만들어 적용 하는게 아니라 역할을 기준으로 그룹핑 하여 테넌트에 해당 되는 사용자에게 적용 됩니다.
 
-The second phase of isolation comes into play when you are accessing resources from your code. The diagram below illustrates the fundamental moving parts of this process.
+Isolation 모델 구현의 두 번째 단계는, 테넌트가 리소스에 액세스 할 때 작동합니다. 아래 다이어그램은 이 프로세스의 기본 적인 흐름을 보여 줍니다.
 
 <p align="center"><img src="./images/lab3/authentication.png" alt="Lab 3 Isolating Tenant Data Overview Authentication"/></p>
 
-In this example, you'll see that our product manager service is invoked from the UI with a request to get a list of products. The JWT token (acquired during authentication) is passed along here in the Authorization header of our HTTP request. This token includes data about the user identity, role, and tenant identity. While this token is valuable for conveying user and tenant attributes, it does nothing to control a tenant's access to resources. **Instead, we must use the data in this token to acquire the scoped credentials we need to access our DynamoDB tables**.
+위 다이어그램을 보면, 제품 목록을 가져 오기 위한 요청과 함께 UI에서 Product Manager 서비스가 호출되는 것을 볼 수 있습니다. JWT 토큰 (인증 중에 획득)은 HTTP 요청의 Authorization 헤더로 전달됩니다. 이 토큰에는 User identity, 역할 및 Tenant identity에 대한 데이터가 포함됩니다. <span style="color:blue">**이 토큰은 사용자 및 테넌트 속성을 담아 전달하는데 유용 하지만 리소스에 대한 테넌트의 액세스를 제어하는 ​​데는 아무일도하지 않습니다. 따라서,이 토큰의 데이터를 사용하여 DynamoDB 테이블에 액세스하는 데 필요한 범위가 지정된 자격 증명(Credential)을 획득 해야합니다**</span>.
 
-The remaining bits of the diagram illustrate how these scoped credentials are acquired. Once our `GET` request comes into our product manager service, we'll make a `getCredentialsForIdentity()` call to Cognito, passing in our token. Cognito will then crack that token open, examine the tenant identifier and user role and match it to one of the policies that were created during provisioning. It will then create a **temporary** set of credentials (shown at the bottom) via STS and return those to our product manager service. Our service will use these temporary credentials to access DynamoDB tables with confidence that these credentials will scope access _by tenant id_.
+다이어그램의 나머지 부분은 이러한 범위가 지정된 자격 증명(Credential)을 획득하는 방법을 보여줍니다.
+
+1️⃣ `GET` 요청이 Product Manager 서비스로 들어 오면 Cognito로 `getCredentialsForIdentity ()`호출을 통해 토큰(idToken)을 전달합니다. 2️⃣ **그런 다음 Cognito는 해당 토큰을 열어서 테넌트 식별자와 사용자 역할을 검사하고 프로비저닝 중에 생성 된 정책 중 하나와 매핑 합니다.** 3️⃣ 그런 다음 STS를 통해 **임시** 자격 증명(Credentials)세트 (다이그램 하단에 표시됨)를 생성하고 이를 Product Manager 서비스로 반환합니다. 4️⃣ Product Manager 서비스는 이러한 임시 자격 증명(Credentials)을 사용하여 이 자격 증명이 _tenan id_ 별 액세스 범위를 지정한다는 확신을 가지고 DynamoDB 테이블에 액세스합니다.
 
 ### What You'll Be Building
+
 Our goal in this exercise is to walk you through the configuration and creation of some of the elements that are part of this process. While the concepts are helpful above, we want to expose you to some of the specifics of how they are used in our reference solution. We'll start by introducing the policies during provisioning and how to configure Cognito to connect our policies to user roles. Lastly, we'll look at how this lands in the code of our application services. The basic steps in this process include:
 
-* **Example of Cross Tenant Access** – first you'll look at how, without policies and scoping, a developer can create a situation that violates the cross-tenant boundaries of the system.
-* **Configure the Provisioned IAM Policies** – now that you've seen an example of cross tenant access, let's start to introduce policies that can be used to prevent cross-tenant access (intended or un-intended). You'll create a policy for different role/resource combinations to get a sense of how these policies are used to scope access to DynamoDB tables. You'll then provision a new tenant and see how these policies are represented in IAM.
-* **Mapping User Roles to Policies** – with Cognito, we can create rules that determine how a user's role will map to the policies that we've created. In this part you'll see how these policies have been configured for our tenant and user roles.
-* **Acquiring Tenant-Scoped Credentials** – finally you'll see how to orchestrate the acquisition of credentials that are scoped by the policies outlined above. The credentials will control our access to data. You'll see how this explicitly enforces cross-tenant scoping.
+- **Example of Cross Tenant Access** – first you'll look at how, without policies and scoping, a developer can create a situation that violates the cross-tenant boundaries of the system.
+- **Configure the Provisioned IAM Policies** – now that you've seen an example of cross tenant access, let's start to introduce policies that can be used to prevent cross-tenant access (intended or un-intended). You'll create a policy for different role/resource combinations to get a sense of how these policies are used to scope access to DynamoDB tables. You'll then provision a new tenant and see how these policies are represented in IAM.
+- **Mapping User Roles to Policies** – with Cognito, we can create rules that determine how a user's role will map to the policies that we've created. In this part you'll see how these policies have been configured for our tenant and user roles.
+- **Acquiring Tenant-Scoped Credentials** – finally you'll see how to orchestrate the acquisition of credentials that are scoped by the policies outlined above. The credentials will control our access to data. You'll see how this explicitly enforces cross-tenant scoping.
 
 With this piece in place, you'll have added a robust mechanism to your solution that much more tightly controls and scopes access to tenant resources. This solution highlights one of many strategies that could be applied to enforce tenant isolation.
 
 ## Part 1 - Example of Cross-Tenant Access
+
 Before we introduce **policies**, it would help to examine a scenario where the absence of richer security policies can open the door to cross-tenant access. We will look at an (admittedly contrived) example where a developer could introduce code that might enable cross-tenant access.
 
 To do this, we'll return to the product manager service and look at how manually injected tenant context could surface data in your application that should not be surfaced. This will set the stage for understanding how the introduction of **policies** can prevent this from happening.
@@ -53,7 +56,7 @@ To artificially create cross tenant access, we need the unique tenant identifier
 <p align="center"><img src="./images/lab3/part1/dynamo_tenant.png" alt="Lab 3 Part 1 Step 14 Dynamo TenantBootcamp Table"/></p>
 
 **Step 2** - Locate the two tenants you created within the list by matching the tenant with the username/email that you used. **Capture the tenant_id value for both of these tenants**. You'll need these values in subsequent steps.
- 
+
 **Step 3** - Now let's go back to the code of our product manager service and make a modification. Open our product manager `server.js` file in our Cloud9 IDE. In Cloud9, navigate to `Lab3/Part1/product-manager/`. Open the file in the editor by either double-clicking or right-click `server.js` and click **Open**.
 
 <p align="center"><img src="./images/lab3/part1/open_server.js.png" alt="Lab 3 Part 1 Step 16 Open server.js"/></p>
@@ -61,57 +64,64 @@ To artificially create cross tenant access, we need the unique tenant identifier
 **Step 4** - Locate the `GET` function that fetches all products for a tenant. The code function will appear as follows:
 
 ```javascript
-app.get('/products', function(req, res) {
-	var searchParams = {
-		TableName: productSchema.TableName,
-		KeyConditionExpression: "tenant_id = :tenant_id",
-		ExpressionAttributeValues: {
-			":tenant_id": tenantId
-			//":tenant_id": "<INSERT TENANT TW0 GUID HERE>"
-		}
-	};
-	// construct the helper object
-	tokenManager.getSystemCredentials(function(credentials) {
-		var dynamoHelper = new DynamoDBHelper(productSchema, credentials, configuration);
-		dynamoHelper.query(searchParams, credentials, function(error, products) {
-			if (error) {
-				winston.error('Error retrieving products: ' + error.message);
-				res.status(400).send('{"Error": "Error retrieving products"}');
-			} else {
-				winston.debug('Products successfully retrieved');
-				res.status(200).send(products);
-			}
-		});
-	});
+app.get("/products", function (req, res) {
+  var searchParams = {
+    TableName: productSchema.TableName,
+    KeyConditionExpression: "tenant_id = :tenant_id",
+    ExpressionAttributeValues: {
+      ":tenant_id": tenantId,
+      //":tenant_id": "<INSERT TENANT TW0 GUID HERE>"
+    },
+  };
+  // construct the helper object
+  tokenManager.getSystemCredentials(function (credentials) {
+    var dynamoHelper = new DynamoDBHelper(
+      productSchema,
+      credentials,
+      configuration
+    );
+    dynamoHelper.query(searchParams, credentials, function (error, products) {
+      if (error) {
+        winston.error("Error retrieving products: " + error.message);
+        res.status(400).send('{"Error": "Error retrieving products"}');
+      } else {
+        winston.debug("Products successfully retrieved");
+        res.status(200).send(products);
+      }
+    });
+  });
 });
 ```
 
 This function is invoked by the application to acquire a list of products that populate the catalog page of system. You can see that it references the `tenant_id` that was extracted from the security token passed into our application. Let's consider what might happen if were **manually replace** this `tenant_id` with another value. Locate the `tenant_id` that you recorded earlier from DynamoDB for **TenantTwo** and _**replace**_ the `tenant_id` with this value. So, when you're done, it should appear similar to the following:
 
 ```javascript
-app.get('/products', function (req, res) {
-    winston.debug('Fetching Products for Tenant Id: ' + tenantId);
-    var searchParams = {
-        TableName: productSchema.TableName,
-        KeyConditionExpression: "tenant_id = :tenant_id",
-        ExpressionAttributeValues: {
-            ":tenant_id": "TENANT4c33c2eae9974615951e3dc04c7b9057"
-        }
-    };
-    // construct the helper object
-    tokenManager.getSystemCredentials(function (credentials) {
-        var dynamoHelper = new DynamoDBHelper(productSchema, credentials, configuration);
-        dynamoHelper.query(searchParams, credentials, function (error, products) {
-            if (error) {
-                winston.error('Error retrieving products: ' + error.message);
-                res.status(400).send('{"Error" : "Error retrieving products"}');
-            } else {
-                winston.debug('Products successfully retrieved');
-                res.status(200).send(products);
-            }
-
-        });
+app.get("/products", function (req, res) {
+  winston.debug("Fetching Products for Tenant Id: " + tenantId);
+  var searchParams = {
+    TableName: productSchema.TableName,
+    KeyConditionExpression: "tenant_id = :tenant_id",
+    ExpressionAttributeValues: {
+      ":tenant_id": "TENANT4c33c2eae9974615951e3dc04c7b9057",
+    },
+  };
+  // construct the helper object
+  tokenManager.getSystemCredentials(function (credentials) {
+    var dynamoHelper = new DynamoDBHelper(
+      productSchema,
+      credentials,
+      configuration
+    );
+    dynamoHelper.query(searchParams, credentials, function (error, products) {
+      if (error) {
+        winston.error("Error retrieving products: " + error.message);
+        res.status(400).send('{"Error" : "Error retrieving products"}');
+      } else {
+        winston.debug("Products successfully retrieved");
+        res.status(200).send(products);
+      }
     });
+  });
 });
 ```
 
@@ -157,7 +167,7 @@ Instead of creating new policies from scratch, let's edit policies that were pro
 
 <p align="center"><img src="./images/lab3/part2/iam_request_conditions.png" alt="Lab 3 Part 2 Step 5 IAM Policy Request Conditions"/></p>
 
-**Step 6** - Select the **Add condition** option at the bottom of the list. Select **dynamodb:LeadingKeys** for the **Condition key**. Select **For all values in request** for the **Qualifier**. Select **StringEquals** for the **Operator**. Finally, in the **Value** text box, enter the GUID of **TenantOne**. Click the **Add** button. Select the  **Review policy** button and then select the **Save Changes** button to save this change to the policy.
+**Step 6** - Select the **Add condition** option at the bottom of the list. Select **dynamodb:LeadingKeys** for the **Condition key**. Select **For all values in request** for the **Qualifier**. Select **StringEquals** for the **Operator**. Finally, in the **Value** text box, enter the GUID of **TenantOne**. Click the **Add** button. Select the **Review policy** button and then select the **Save Changes** button to save this change to the policy.
 
 <p align="center"><img src="./images/lab3/part2/iam_add_request_condition.png" alt="Lab 3 Part 2 Step 6 IAM Policy Add Request Condition"/></p>
 
@@ -203,73 +213,82 @@ The steps that follow will guide you through the process of configuring and depl
 
 <p align="center"><img src="./images/lab3/part4/cloud9_open_server.js.png" alt="Lab 3 Part 4 Step 1 Cloud9 Open server.js"/></p>
 
-The code shown below highlights the last key piece of the tenant isolation puzzle. You'll notice that we have added a call to our `tokenManager` that acquires credentials from the authenticated user's security token. The `getCredentialsFromToken()` method takes the HTTP request and returns the `credentials` that are **scoped by tenant**. These credentials are  used in our calls to the `dynamoHelper` to ensure that we **cannot cross tenant boundaries**.
+The code shown below highlights the last key piece of the tenant isolation puzzle. You'll notice that we have added a call to our `tokenManager` that acquires credentials from the authenticated user's security token. The `getCredentialsFromToken()` method takes the HTTP request and returns the `credentials` that are **scoped by tenant**. These credentials are used in our calls to the `dynamoHelper` to ensure that we **cannot cross tenant boundaries**.
 
 ```javascript
-app.get('/product/:id', function (req, res) {
-    winston.debug('Fetching product: ' + req.params.id);
-    tokenManager.getCredentialsFromToken(req, function (credentials) {
-        // init params structure with request params
-        var params = {
-            tenant_id: tenantId,
-            product_id: req.params.id
-        };
-        // construct the helper object
-        var dynamoHelper = new DynamoDBHelper(productSchema, credentials, configuration);
-        dynamoHelper.getItem(params, credentials, function (err, product) {
-            if (err) {
-                winston.error('Error getting product: ' + err.message);
-                res.status(400).send('{"Error" : "Error getting product"}');
-            } else {
-                winston.debug('Product ' + req.params.id + ' retrieved');
-                res.status(200).send(product);
-            }
-        });
+app.get("/product/:id", function (req, res) {
+  winston.debug("Fetching product: " + req.params.id);
+  tokenManager.getCredentialsFromToken(req, function (credentials) {
+    // init params structure with request params
+    var params = {
+      tenant_id: tenantId,
+      product_id: req.params.id,
+    };
+    // construct the helper object
+    var dynamoHelper = new DynamoDBHelper(
+      productSchema,
+      credentials,
+      configuration
+    );
+    dynamoHelper.getItem(params, credentials, function (err, product) {
+      if (err) {
+        winston.error("Error getting product: " + err.message);
+        res.status(400).send('{"Error" : "Error getting product"}');
+      } else {
+        winston.debug("Product " + req.params.id + " retrieved");
+        res.status(200).send(product);
+      }
     });
+  });
 });
 ```
+
 **Step 2** - The call to `getCredentialsFromToken()` described above is where all the magic happens in terms of mapping our token/identity to the appropriate policies and returning that in the form of credentials. Given the importance of this function, let's dig in and look more closely at what it is doing. Below is a snippet of code from the `TokenManager` that implements the `getCredentialsFromToken()` function:
 
 ```javascript
 module.exports.getCredentialsFromToken = function (req, updateCredentials) {
-    var bearerToken = req.get('Authorization');
-    if (bearerToken) {
-        var tokenValue = bearerToken.substring(bearerToken.indexOf(' ') + 1);
-        if (!(tokenValue in tokenCache)) {
-            var decodedIdToken = jwtDecode(tokenValue);
-            var userName = decodedIdToken['cognito:username'];
-            async.waterfall([
-                function (callback) {
-                    getUserPoolWithParams(userName, callback);
-                },
-                function (userPool, callback) {
-                    authenticateUserInPool(userPool, tokenValue, callback);
-                }
-            ], function (error, results) {
-                if (error) {
-                    winston.error('Error fetching credentials for user');
-                    updateCredentials(null);
-                } else {
-                    tokenCache[tokenValue] = results;
-                    updateCredentials(results);
-                }
-            });
-        } else if (tokenValue in tokenCache) {
-            winston.debug('Getting credentials from cache');
-            updateCredentials(tokenCache[tokenValue]);
+  var bearerToken = req.get("Authorization");
+  if (bearerToken) {
+    var tokenValue = bearerToken.substring(bearerToken.indexOf(" ") + 1);
+    if (!(tokenValue in tokenCache)) {
+      var decodedIdToken = jwtDecode(tokenValue);
+      var userName = decodedIdToken["cognito:username"];
+      async.waterfall(
+        [
+          function (callback) {
+            getUserPoolWithParams(userName, callback);
+          },
+          function (userPool, callback) {
+            authenticateUserInPool(userPool, tokenValue, callback);
+          },
+        ],
+        function (error, results) {
+          if (error) {
+            winston.error("Error fetching credentials for user");
+            updateCredentials(null);
+          } else {
+            tokenCache[tokenValue] = results;
+            updateCredentials(results);
+          }
         }
+      );
+    } else if (tokenValue in tokenCache) {
+      winston.debug("Getting credentials from cache");
+      updateCredentials(tokenCache[tokenValue]);
     }
+  }
 };
 ```
 
 Let's highlight the key elements of this function.
-* The very first action is to extract the security `bearerToken` from the HTTP request. This is the token that you received from Cognito after you authenticated your user.
-* We then decode the token and extract the `userName` attribute.
-* Next, a series of calls are executed in sequence. It starts by looking up the `userPool` for the current user. It then calls `authenticateUserInPool()`. This function, which is part of the `TokenManager` helper class ultimately calls the Cognito `getCredentialsForIdentity()` method, passing in the token from the user.
+
+- The very first action is to extract the security `bearerToken` from the HTTP request. This is the token that you received from Cognito after you authenticated your user.
+- We then decode the token and extract the `userName` attribute.
+- Next, a series of calls are executed in sequence. It starts by looking up the `userPool` for the current user. It then calls `authenticateUserInPool()`. This function, which is part of the `TokenManager` helper class ultimately calls the Cognito `getCredentialsForIdentity()` method, passing in the token from the user.
 
 It's this call to Cognito that **triggers the role mapping** we configured earlier. Cognito will extract the role from the supplied token and match it to the policy, then construct a **temporary set of scoped credentials** that are returned to the calling function.
 
-**Step 2** - So that's what the code is doing behind the scenes. Now, let's deploy this new version of the product manager service to see it in action. In Cloud9, navigate to the  `Lab3/Part4/product-manager` directory, right-click `deploy.sh`, and click **Run** to execute the shell script.
+**Step 2** - So that's what the code is doing behind the scenes. Now, let's deploy this new version of the product manager service to see it in action. In Cloud9, navigate to the `Lab3/Part4/product-manager` directory, right-click `deploy.sh`, and click **Run** to execute the shell script.
 
 <p align="center"><img src="./images/lab3/part4/cloud9_run.png" alt="Lab 3 Part 4 Step 2 Cloud9 Run"/></p>
 
@@ -295,57 +314,65 @@ At this point, we have incorporated security at the IAM level by leveraging Cogn
 **Step 2** - Locate the `GET` function that fetches all products for a tenant. The code function will appear as follows:
 
 ```javascript
-app.get('/products', function(req, res) {
-	winston.debug('Fetching Products for Tenant Id: ' + tenantId);
-	tokenManager.getCredentialsFromToken(req, function (credentials) {
-		var searchParams = {
-			TableName: productSchema.TableName,
-			KeyConditionExpression: "tenant_id = :tenant_id",
-			ExpressionAttributeValues: {
-				":tenant_id": tenantId
-				//":tenant_id": "<INSERT TENANTTWO GUID HERE>"
-			}
-		};
-		// construct the helper object
-		var dynamoHelper = new DynamoDBHelper(productSchema, credentials, configuration);
-		dynamoHelper.query(searchParams, credentials, function(error, products) {
-			if (error) {
-				winston.error('Error retrieving products: ' + error.message);
-				res.status(400).send('{"Error": "Error retrieving products"}');
-			} else {
-				winston.debug('Products successfully retrieved');
-				res.status(200).send(products);
-			}
-		});
-	});
+app.get("/products", function (req, res) {
+  winston.debug("Fetching Products for Tenant Id: " + tenantId);
+  tokenManager.getCredentialsFromToken(req, function (credentials) {
+    var searchParams = {
+      TableName: productSchema.TableName,
+      KeyConditionExpression: "tenant_id = :tenant_id",
+      ExpressionAttributeValues: {
+        ":tenant_id": tenantId,
+        //":tenant_id": "<INSERT TENANTTWO GUID HERE>"
+      },
+    };
+    // construct the helper object
+    var dynamoHelper = new DynamoDBHelper(
+      productSchema,
+      credentials,
+      configuration
+    );
+    dynamoHelper.query(searchParams, credentials, function (error, products) {
+      if (error) {
+        winston.error("Error retrieving products: " + error.message);
+        res.status(400).send('{"Error": "Error retrieving products"}');
+      } else {
+        winston.debug("Products successfully retrieved");
+        res.status(200).send(products);
+      }
+    });
+  });
 });
 ```
 
 We will once again **manually inject** the `tenant_id` for **TenantTwo** to see if our new code will prevent cross tenant access. Locate the `tenant_id` that you recorded earlier from DynamoDB for **TenantTwo** and _**replace**_ the `tenant_id` with this value. So, when you're done, it should appear similar to the following:
 
 ```javascript
-app.get('/products', function (req, res) {
-    winston.debug('Fetching Products for Tenant Id: ' + tenantId);
-    tokenManager.getCredentialsFromToken(req, function (credentials) {
-        var searchParams = {
-            TableName: productSchema.TableName,
-            KeyConditionExpression: "tenant_id = :tenant_id",
-            ExpressionAttributeValues: {
-                ":tenant_id": "TENANT4c33c2eae9974615951e3dc04c7b9057"
-            }
-        };
-        // construct the helper object
-        var dynamoHelper = new DynamoDBHelper(productSchema, credentials, configuration);
-        dynamoHelper.query(searchParams, credentials, function (error, products) {
-            if (error) {
-                winston.error('Error retrieving products: ' + error.message);
-                res.status(400).send('{"Error" : "Error retrieving products"}');
-            } else {
-                winston.debug('Products successfully retrieved');
-                res.status(200).send(products);
-            }
-        });
+app.get("/products", function (req, res) {
+  winston.debug("Fetching Products for Tenant Id: " + tenantId);
+  tokenManager.getCredentialsFromToken(req, function (credentials) {
+    var searchParams = {
+      TableName: productSchema.TableName,
+      KeyConditionExpression: "tenant_id = :tenant_id",
+      ExpressionAttributeValues: {
+        ":tenant_id": "TENANT4c33c2eae9974615951e3dc04c7b9057",
+      },
+    };
+    // construct the helper object
+    var dynamoHelper = new DynamoDBHelper(
+      productSchema,
+      credentials,
+      configuration
+    );
+    dynamoHelper.query(searchParams, credentials, function (error, products) {
+      if (error) {
+        winston.error("Error retrieving products: " + error.message);
+        res.status(400).send('{"Error" : "Error retrieving products"}');
+      } else {
+        winston.debug("Products successfully retrieved");
+        res.status(200).send(products);
+      }
     });
+  });
 });
 ```
 
