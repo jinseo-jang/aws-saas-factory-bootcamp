@@ -2,27 +2,27 @@
 
 ![SaaSAWS](images/SaaS-Factory.png "SaaS Factory")
 
-# Introduction
+# 소개
 
-SaaS presents developers with a unique blend of challenges: multi-tenancy, onboarding, security, data partitioning, tenant isolation, and identity.
+SaaS 아키텍팅은 개발자에게 멀티 테넌시, 온보딩, 보안, 데이터 분할, 테넌트 격리 및 Identity와 같은 것에 대한 고민을 하도록 만듭니다.
 
-One of the best ways to understand architectural principles of SaaS is to dig into working examples of designing, building, and optimizing SaaS. In this bootcamp workshop, we’ll expose you to the core concepts of SaaS architecture by diving into a reference SaaS architecture where you can see the moving parts of a SaaS solution in action.
+이 부트캠프 워크숍에서는 샘플 SaaS 솔루션의 아키텍처를 살펴봄으로써 SaaS 아키텍처의 핵심 개념에 대해 설명합니다.
 
-This workshop provides a series of activities for attendees to interact with a functional solution, and hands-on exercises that introduce code and configuration to realize and extend the capabilities of this SaaS environment. The combination of lecture and exercises through the lens of a working reference solution give greater insight into SaaS on AWS best practices.
+이 워크숍은 참석여자가 SaaS 아키텍처의 핵심 개념을 직접 구성해보는 실습을 제공합니다. 이를 통해 모범 사례 SaaS 아키텍쳐에 대한 아이디어를 얻을 수 있습니다.
 
-# Who should participate?
+# 누가 참여 해야 하나?
 
-Application developers and architects that are looking to get into the details of implementing a SaaS solution on AWS are encouraged to participate. The content of the bootcamp is geared toward those newer to SaaS. However, even if you have a background in SaaS, this experience could still expose you to specifics of delivering SaaS on AWS.
+이 부트캠프의 내용은 SaaS를 처음 접하는 사람들을 대상으로 합니다. 그러나 SaaS에 대한 배경 지식이 있는 사람들이더라도, 이 부트캠프 내용을 통해 SaaS를 AWS에서 구현하는 경험을 해볼 수 있습니다.
 
-# How do I start?
+# 워크샵을 어떻게 시작 하나요?
 
-If you are participating in this bootcamp workshop during an AWS event, follow the instructions of the instructors on site.
+만약 AWS에서 호스팅 하는 이벤트를 통해 참여 하는 분들이라면 호스트의 안내를 따르시면 됩니다.
 
-If you would like to run through the lab exercises in a self-guided manner, all you need to do is launch the [workshop.yml](https://github.com/aws-samples/aws-saas-factory-bootcamp/blob/master/resources/workshop.yml) Amazon CloudFormation template in your AWS account and then start by clicking the Lab 1 icon below.
+만약 개인적으로 실습을 실행하려면 AWS 계정에서 [workshop.yml](https://github.com/jinseo-jang/aws-saas-factory-bootcamp/blob/master/resources/workshop.yml) Cloudformation 템플릿을 시작하기만 하면 됩니다. 그리고 이어서 아래 Lab 1 아이콘을 클릭해 랩 가이드를 따르면 됩니다.
 
-Note that this workshop deploys infrastructure into your AWS account that is outside of the free tier, and you should delete the CloudFormation stack when you are finished to minimize costs.
+이때 주의 사항은 **이 워크샵은 프리 티어 범위 밖의 AWS 서비스를 사용하므로 비용을 최소화하기 위해 완료되면 CloudFormation 스택을 삭제해야 하셔야 합니다.**
 
-# Lab Guides
+# Lab 가이드
 
 ### Lab 1 - Identity and Onboarding
 
