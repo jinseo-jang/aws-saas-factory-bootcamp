@@ -362,10 +362,10 @@ Order manager 사용자를 위해 발송된 임시 비밀번호로 로그인 합
 <p align="center"><img src="./images/lab1/part5/developer_tools.png" alt="Lab 1 Part 5 Step 2 Developer Tools"/></p>
 
 **Step 3** – **Authorization** header는 **Bearer**라는 용어와 인코딩 된 문자열로 구성됩니다. 이것은 **JSON Web Token** (JWT)으로 더 잘 알려진 인증 토큰입니다. 인코딩 된 토큰을 텍스트 편집기에 복사 해둡니다. 이 토큰을 디코딩 하여 메타 데이터를 확인해보기 위해 브라우저에서 https://jwt.io/ 엽니다.
+> **주의** 개발자 도구에서 토큰을 복사 할 때 **`authoriztion: Bearer`** 다음에 이어지는 토큰 값을 복사 합니다.
 
 <p align="center"><img src="./images/lab1/part5/jwtio.png" alt="Lab 1 Part 5 Step 3 JWT.io"/></p>
 
-> **주의** 개발자 도구에서 토큰을 복사 할 때 **`authoriztion: Bearer`** 다음에 이어지는 토큰 값을 복사 합니다.
 
 
 **Step 4** – 페이지를 아래로 스크롤하고 인코딩 된 토큰을 웹 사이트 중간의 **Encoded** 텍스트 상자에 붙여 넣습니다. 웹 사이트의 **Decoded** 섹션의 **PAYLOAD** 부분에 사용자의 **email** 주소 및 **custom:tenant_id** 과 같은, 실습 초반 Amazon Cognito에 설정한 **custom claims** 을 포함한 디코딩 된 키 값 쌍들이 포함되어 있습니다.
