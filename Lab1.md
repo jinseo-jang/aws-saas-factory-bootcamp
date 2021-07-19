@@ -2,7 +2,7 @@
 
 ### Overview
 
-이 첫 번째 실습에서는 테넌트를 SaaS 시스템에 온 보딩하는 데 필요한 사항을 살펴 보겠습니다. 여러 측면에서 **온보딩은 SaaS의 가장 중요한 요소 가운데 하나입니다.** 온보딩 과정에서 앞으로 SaaS 서비스가 어떻게 테넌트를 식별하고, 이 식별된 테넌트를 SaaS 아키텍처의 각 요소(서비스, 리소스)에 적용할 지 결정 하게 됩니다. 
+이 첫 번째 실습에서는 테넌트를 SaaS 시스템에 온 보딩하는 데 필요한 사항을 살펴 보겠습니다. 여러 측면에서 **온보딩은 SaaS의 가장 중요한 요소 가운데 하나입니다.** 온보딩 과정에서 앞으로 SaaS 서비스가 어떻게 테넌트를 식별하고, 이 식별된 테넌트를 SaaS 아키텍처의 각 요소(서비스, 리소스)에 적용할 지 결정 하게 됩니다.
 
 또한 이것을 바탕으로 궁극적으로 **SaaS 서비스 안에서 이 식별된 테넌트를 바탕으로 논리적 혹은 물리적인 격리(isolation)을 달성할 수 있습니다.**
 
@@ -29,7 +29,7 @@ SaaS 서비스 온보딩의 핵심 부분은 **SaaS Identity**를 만드는 겁�
 
 이번 파트의 목표는 사용자를 가입, 관리, 인증하는데 사용되는 Amazon Cognito를 직접 손으로 셋업 해보면서, 사용자 온보딩, 관리, 인증의 흐름을 이해하는데 있습니다. 또한 이 과정에서 사용자를 테넌트와 연결하여 SaaS Identity를 생성할 수 있도록 하는 기능도 만들어 볼겁니다.
 
-이번 Bootcamp 에서 사용하는 샘플 SaaS 애플리케이션은, 각 테넌트 마다 고유한 Cognito User Pool을 갖습니다. 그리고 이 각각의 user pool은 테넌트의 온보딩 과정에서 자동으로 만들어질 겁니다. 
+이번 Bootcamp 에서 사용하는 샘플 SaaS 애플리케이션은, 각 테넌트 마다 고유한 Cognito User Pool을 갖습니다. 그리고 이 각각의 user pool은 테넌트의 온보딩 과정에서 자동으로 만들어질 겁니다.
 
 **Step 1** - AWS Console 에서 Amazon Cognito 로 이동한 다음 **"Manage User Pools"**을 선택 합니다.
 
@@ -49,7 +49,7 @@ SaaS 서비스 온보딩의 핵심 부분은 **SaaS Identity**를 만드는 겁�
 
 <p align="center"><img src="./images/lab1/part1/cognito_step2_signin.png" alt="Lab 1 Part 1 Step 4 Cognito Attributes Sign In"/></p>
 
-**Step 5** – 이제 user pool의 표준 속성 값을 설정 하는 단계로 이동 합니다. 여기서 **email**, **family name**, **given name**, **phone number**, and **preferred username** 속성을 선택 합니다. (*이런 속성들은 보통 OIDC 표준 claim들 입니다.)
+**Step 5** – 이제 user pool의 표준 속성 값을 설정 하는 단계로 이동 합니다. 여기서 **email**, **family name**, **given name**, **phone number**, and **preferred username** 속성을 선택 합니다. (\*이런 속성들은 보통 OIDC 표준 claim들 입니다.)
 
 <p align="center"><img src="./images/lab1/part1/cognito_step3_std_attributes.png" alt="Lab 1 Part 1 Step 5 Cognito Standard Attributes"/></p>
 
@@ -59,7 +59,7 @@ SaaS 서비스 온보딩의 핵심 부분은 **SaaS Identity**를 만드는 겁�
 
 <p align="center"><img src="./images/lab1/part1/cognito_step4_add_custom_attribute.png" alt="Lab 1 Part 1 Step 6 Cognito Custom Attributes"/></p>
 
-다음의 테넌트 속성을 추가 합니다.(***Add another attribute를 눌러 추가 합니다**)
+다음의 테넌트 속성을 추가 합니다.(**\*Add another attribute를 눌러 추가 합니다**)
 
 - **tenant_id** (string, default max length, _**not**_ mutable)
 - **tier** (string, default max length, mutable)
@@ -108,6 +108,7 @@ Password: {####}.
 그리고 **Auth Flows Configuration** 설정 부분에서 마지막 기본 값으로 선택된 항목을 제외한 나머지 항목의 선택을 모두 취소 합니다.
 
 그리고 그 외의 항목은 기본 값 그대로 둡니다. 최종 설정 모습은 다음과 같습니다.
+
 <p align="center"><img src="./images/lab1/part1/cognito_step8_app_client_config.png" alt="Lab 1 Part 1 Step 12 Cognito Configure App Client"/></p>
 
 이제 "**Create app client**" 버튼을 선택한 다음 "**Next step**"버튼을 선택합니다.
@@ -148,7 +149,7 @@ User Identity 관리를 지원하기 위해 Cognito를 생성 했습니다만, �
 
 <p align="center"><img src="./images/lab1/part2/cloud9_launch.png" alt="Lab 1 Part 2 Step 1 Launch Cloud9 IDE"/></p>
 
-**Step 2** – 코드를 살펴 보겠습니다. Cloud9 IDE가 시작되면 이 실습 GitHub 저장소가 자동으로 복제되어 왼쪽 폴더 트리에 `aws-saas-factory-bootcamp` 폴더 표시 될겁니다. 이 폴더에서 `Lab1/Part2/app/source/user-manager/src` 폴더로 이동합니다. **server.js** 파일을 두 번 클릭하여 편집기 창에서 엽니다. 이 파일은 **Express** 웹 애플리케이션 프레임 워크를 사용하여 사용자 관리를위한 REST API를 구현하는 **Node.js** 파일입니다. 아래 목록은 온보딩 과정에 관여하는 Entry point 목록 입니다.
+**Step 2** – 코드를 살펴 보겠습니다. Cloud9 IDE가 시작되면 이 실습 GitHub 저장소가 자동으로 복제되어 왼쪽 폴더 트리에 `aws-saas-factory-bootcamp` 폴더 표시 될겁니다. 이 폴더에서 `source/user-manager` 폴더로 이동합니다. **server.js** 파일을 두 번 클릭하여 편집기 창에서 엽니다. 이 파일은 **Express** 웹 애플리케이션 프레임 워크를 사용하여 사용자 관리를위한 REST API를 구현하는 **Node.js** 파일입니다. 아래 목록은 온보딩 과정에 관여하는 Entry point 목록 입니다.
 
 ```javascript
 app.get('/user/pool/:id', function(req, res) {...});
@@ -198,7 +199,7 @@ app.post("/user/create", function (req, res) {
 
 이를 위해서는 실습을 위해 배포된 마이크로 서비스와 연결된 **API Gateway**의 **Inovke IRL**과 identity pool을 생성 할 때 이전에 메모해둔 Cognito의 **Pool Id**가 필요합니다.
 
-AWS 콘솔에서 **API Gateway** 콘솔로 이동합니다.  API 목록 가운데 **saas-bootcamp-api**를 선택합니다. 그리고 이어서, 좌측 네비게이션에서 **Stages**를 선택하고 바로 오른편에 나타나는 v1을 선택 합니다. 그러면 아래 화면 처럼 **Invoke ULR**이 파란색으로 하이라이트 되어 나타 납니다.
+AWS 콘솔에서 **API Gateway** 콘솔로 이동합니다. API 목록 가운데 **saas-bootcamp-api**를 선택합니다. 그리고 이어서, 좌측 네비게이션에서 **Stages**를 선택하고 바로 오른편에 나타나는 v1을 선택 합니다. 그러면 아래 화면 처럼 **Invoke ULR**이 파란색으로 하이라이트 되어 나타 납니다.
 
 <p align="center"><img src="./images/lab1/part2/apigateway_stage_url.png" alt="Lab 1 Part 2 Step 4 Load Balancer DNS Name"/></p>
 
@@ -223,6 +224,7 @@ curl -w "\n" --header "Content-Type: application/json" --request POST --data '{"
 ```
 
 호출이 성공되면 아래와 같이 새롭게 생성된 사용자 객체가 JSON 포맷으로 반환 될겁니다.
+
 <p align="center"><img src="./images/lab1/part2/curl_cognito_success.png" alt="Lab 1 Part 2 Step 7 Curl Cognito"/></p>
 
 **Step 8** – Cognito User pool 에 새로운 사용자가 생성되었는지 확인 하겠습니다. 다시 한 번 AWS 콘솔의 Cognito 서비스로 돌아 갑니다. **Manager User Pools**을 선택하고 위에서 만든 User pool인 **"SaaS Bootcamp users**"를 선택 합니다.
@@ -261,13 +263,13 @@ curl 호출이 성공 했다면 `{"status":"success"}`라는 결과가 리턴 �
 
 <p align="center"><img src="./images/lab1/part3/dynamo_tenant_table.png" alt="Lab 1 Part 3 Step 3 DynamoDB Tenant Table"/></p>
 
-**Recap**: Part3의 목표는 User 데이터와 테넌트의 고유한 속성 데이터를 분리함으로써 테넌트를 관리하고 명확한 방법을 마련 하는것 이었습니다. 이를 위하여, ​​Tenant Manager라는 테넌트 관리 서비스를 도입하고, 이를 통해 DynamoDB에 테넌트 데이터를 별도로 관리하는 과정을 살펴 봤습니다. 참고로 앞으로 DynamoDB 테이블에 생성되는 **tenat_id**는 이전 파트에서 **custom attribute** 로 추가 한 **tenant_id**를 통해 연결되어 생성 될겁니다. 
+**Recap**: Part3의 목표는 User 데이터와 테넌트의 고유한 속성 데이터를 분리함으로써 테넌트를 관리하고 명확한 방법을 마련 하는것 이었습니다. 이를 위하여, ​​Tenant Manager라는 테넌트 관리 서비스를 도입하고, 이를 통해 DynamoDB에 테넌트 데이터를 별도로 관리하는 과정을 살펴 봤습니다. 참고로 앞으로 DynamoDB 테이블에 생성되는 **tenat_id**는 이전 파트에서 **custom attribute** 로 추가 한 **tenant_id**를 통해 연결되어 생성 될겁니다.
 
 ## Part 4 - The Onboarding & Authentication Application
 
-Part4 에서는 온보딩 프로세스를 지원하기 위한 모든 마이크로 서비스가 배포되고 백엔드 인프라 부분이 배포 됩니다. 그리고 테넌트를 온보딩하고 인증하기 위한 서비스 모듈을 실습용 SaaS 애플리케이션을 동작 해보며 살펴볼 겁니다.(*이 애플리케이션은 **Amazon S3**에서 호스팅되는 비교적 간단한 AngularJS 애플리케이션입니다.)
+Part4 에서는 온보딩 프로세스를 지원하기 위한 모든 마이크로 서비스가 배포되고 백엔드 인프라 부분이 배포 됩니다. 그리고 테넌트를 온보딩하고 인증하기 위한 서비스 모듈을 실습용 SaaS 애플리케이션을 동작 해보며 살펴볼 겁니다.(\*이 애플리케이션은 **Amazon S3**에서 호스팅되는 비교적 간단한 AngularJS 애플리케이션입니다.)
 
-**Step 1** – SaaS 웹 애플리케이션을 동작 해보기 전에 위에서 설명한 REST 서비스를 호출 할 UI 코드의 샘플을 살펴 보겠습니다. 다음 코드는`Lab1/Part6/app/source/client/src/app/scripts/controllers/register.js`에 있는 컨트롤러에서 가져온 것입니다. registration 양식을 작성하고 사용자가 **Register** 버튼을 선택하면 시스템이 아래 코드를 호출합니다:
+**Step 1** – SaaS 웹 애플리케이션을 동작 해보기 전에 위에서 설명한 REST 서비스를 호출 할 UI 코드의 샘플을 살펴 보겠습니다. 다음 코드는`source/web-client/app/scripts/controllers/register.js`에 있는 컨트롤러에서 가져온 것입니다. registration 양식을 작성하고 사용자가 **Register** 버튼을 선택하면 시스템이 아래 코드를 호출합니다:
 
 ```javascript
 $scope.formSubmit = function () {
@@ -315,7 +317,8 @@ AWS 콘솔에서 **CloudFront** 서비스로 이동합니다. 아래와 같은 �
 <p align="center"><img src="./images/lab1/part4/registration.png" alt="Lab 1 Part 4 Step 3 Registration Form"/></p>
 
 새 테넌트에 대한 데이터를 입력 하세요. 여기서 키 값은 이메일 주소입니다. 여기에 "Plan" 값은 이 테넌트가 사용할 Tiering을 고르는 용도 입니다. 양식을 작성한 후 **Register** 버튼을 클릭하면 신원을 확인하기 위한 이메일을 보냈다는 메시지가 표시됩니다.
->**주의**: 새로운 테넌트 등록이 완료되면 이메일로 신원 확인 메일이 발송 됩니다. 따라서 이 메일 확인이 가능한 유효한 이메일 주소를 사용해야 합니다.
+
+> **주의**: 새로운 테넌트 등록이 완료되면 이메일로 신원 확인 메일이 발송 됩니다. 따라서 이 메일 확인이 가능한 유효한 이메일 주소를 사용해야 합니다.
 
 **Step 4** - 테넌트 등록에 사용한 이메일 수신함으로 이동해 메일을 확인 합니다. 아래 화면과 같은 신원 확인 메일을 확인할 수 있을 겁니다:
 
@@ -333,7 +336,7 @@ AWS 콘솔에서 **CloudFront** 서비스로 이동합니다. 아래와 같은 �
 
 <p align="center"><img src="./images/lab1/part4/home_page.png" alt="Lab 1 Part 4 Step 7 Home Page"/></p>
 
-**Step 8** – 새로 생성된 테넌트는 **Tenant Administrator**로 생성됩니다. 이를 통해 테넌트 환경을 완전히 제어 할 수 있습니다. 또한 시스템에서 새 User를 생성 할 수있는 권한도 갖습니다. 한번 확인해 보겠습니다. 페이지 상단의 **Users** 메뉴 옵션으로 이동합니다. 시스템의 현재 사용자 목록이 표시됩니다.(*Administrator 사용자만 확인될 겁니다.)
+**Step 8** – 새로 생성된 테넌트는 **Tenant Administrator**로 생성됩니다. 이를 통해 테넌트 환경을 완전히 제어 할 수 있습니다. 또한 시스템에서 새 User를 생성 할 수있는 권한도 갖습니다. 한번 확인해 보겠습니다. 페이지 상단의 **Users** 메뉴 옵션으로 이동합니다. 시스템의 현재 사용자 목록이 표시됩니다.(\*Administrator 사용자만 확인될 겁니다.)
 
 <p align="center"><img src="./images/lab1/part4/users.png" alt="Lab 1 Part 4 Step 8 Users"/></p>
 
@@ -353,7 +356,7 @@ Order manager 사용자를 위해 발송된 임시 비밀번호로 로그인 합
 
 ## Part 5 - Acquiring Tenant Context
 
-앞선 과정 까지 SaaS 애플리케이션을 위한 확장 가능하고 자동화된 테넌트 온보딩 프로세스를 만드는 방법을 살펴 보았습니다. 이제 인증된 사용자와 테넌트 정보가 결환된 SaaS Identity가 OpenID 표준에서 말하는 custom claims을 사용해 어떻게 만들어지고 전달되는지 살펴 보겠습니다.
+앞선 과정 까지 SaaS 애플리케이션을 위한 확장 가능하고 자동화된 테넌트 온보딩 프로세스를 만드는 방법을 살펴 보았습니다. 이제 인증된 사용자와 테넌트 정보가 결합된 SaaS Identity가 OpenID 표준에서 말하는 custom claims을 사용해 어떻게 만들어지고 전달되는지 살펴 보겠습니다.
 
 **Step 1** – 웹 애플리케이션으로 돌아가 아직 로그인하지 않은 경우 Tenant Administrator로 로그인합니다. 애플리케이션이 시스템의 REST API를 호출 할 때 HTTP 헤더를 조사하기 위해 웹 브라우저에서 **개발자 도구**의 **네트워크** 탭을 사용합니다.
 
@@ -362,11 +365,10 @@ Order manager 사용자를 위해 발송된 임시 비밀번호로 로그인 합
 <p align="center"><img src="./images/lab1/part5/developer_tools.png" alt="Lab 1 Part 5 Step 2 Developer Tools"/></p>
 
 **Step 3** – **Authorization** header는 **Bearer**라는 용어와 인코딩 된 문자열로 구성됩니다. 이것은 **JSON Web Token** (JWT)으로 더 잘 알려진 인증 토큰입니다. 인코딩 된 토큰을 텍스트 편집기에 복사 해둡니다. 이 토큰을 디코딩 하여 메타 데이터를 확인해보기 위해 브라우저에서 https://jwt.io/ 엽니다.
+
 > **주의** 개발자 도구에서 토큰을 복사 할 때 **`authoriztion: Bearer`** 다음에 이어지는 토큰 값을 복사 합니다.
 
 <p align="center"><img src="./images/lab1/part5/jwtio.png" alt="Lab 1 Part 5 Step 3 JWT.io"/></p>
-
-
 
 **Step 4** – 페이지를 아래로 스크롤하고 인코딩 된 토큰을 웹 사이트 중간의 **Encoded** 텍스트 상자에 붙여 넣습니다. 웹 사이트의 **Decoded** 섹션의 **PAYLOAD** 부분에 사용자의 **email** 주소 및 **custom:tenant_id** 과 같은, 실습 초반 Amazon Cognito에 설정한 **custom claims** 을 포함한 디코딩 된 키 값 쌍들이 포함되어 있습니다.
 
